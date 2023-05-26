@@ -1,0 +1,26 @@
+.ethics-page {
+    @include grid1;
+    position: relative;
+    top: 90px;
+}
+
+.ethics-policy-container {
+    @include grid1;
+    width: 1180px;
+    margin-left: 270px;
+    color: $light;
+}
+
+.ethics-policy {
+    text-align: justify;
+    font-family: $robmon;
+    font-size: 1.2rem;
+    column-count: 2;
+}
+
+.signature {
+    text-align: left;
+    font-family: $robmon;
+    font-size: 2rem;
+    margin-bottom: 27px;
+}

@@ -1,0 +1,44 @@
+//mixins
+@mixin wh100 {
+    width: 100%;
+    height: 100%;
+}
+
+@mixin centerFlex {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+@mixin grid1 {
+    display: grid;
+    grid-template-columns: 1fr;
+}
+
+@mixin grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+@mixin grid3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+}
+
+//colors
+$light: #bfc2c2;
+$light-active: #7e7e7e;
+$dark: #131313;
+$orange: #ffbb38;
+$red: #ff5959;
+$blue: #8cd6ff;
+//transitions
+$e: all 0.2s ease;
+$ei: all 0.2s ease-in;
+$eio: all 0.2s ease-in-out;
+//fonts
+$mn: 'Mynerve',
+sans-serif;
+$robmon: 'Roboto Mono',
+monospace;

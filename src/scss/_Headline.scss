@@ -1,0 +1,23 @@
+@import 'utils';
+.headline {
+    display: flex;
+    flex-direction: row;
+    height: 360px;
+    width: 900px;
+    font-size: 2rem;
+    padding: 18px;
+    background: $light;
+    font-family: 'Times New Roman', Times, serif;
+    header {
+        color: $dark;
+        width: 270px;
+    }
+}
+
+.model-container {
+    position: relative;
+    right: 0;
+    background: $dark;
+    width: 360px;
+    height: 400px;
+}

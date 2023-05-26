@@ -1,0 +1,25 @@
+{
+    "asset" : {
+        "generator" : "Khronos glTF Blender I/O v3.4.50",
+        "version" : "2.0"
+    },
+    "scene" : 0,
+    "scenes" : [
+        {
+            "name" : "Scene",
+            "nodes" : [
+                0
+            ]
+        }
+    ],
+    "nodes" : [
+        {
+            "name" : "GPencil.001",
+            "translation" : [
+                0,
+                -0.38915663957595825,
+                0
+            ]
+        }
+    ]
+}

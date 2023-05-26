@@ -1,0 +1,9 @@
+@import 'utils';
+.model-container {
+    @include centerFlex;
+    height: 100vh;
+    width: 100%;
+    position: relative;
+    top: 90px;
+    margin: auto;
+}

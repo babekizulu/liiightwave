@@ -1,0 +1,39 @@
+@import 'utils';
+.navbar {
+    display: flex;
+    position: relative;
+    left: 0;
+    top: 90px;
+    margin-left: 18px;
+    ul {
+        list-style: none;
+    }
+    li {
+        margin-bottom: 18px;
+    }
+}
+
+.nav-item {
+    text-decoration: none;
+    color: $light;
+    font-family: $robmon;
+    font-style: normal;
+    font-size: 1.4rem;
+    font-weight: 600;
+    background: none;
+    padding: 9px;
+    transition: $ei;
+    &:hover {
+        font-style: italic;
+        transition: $ei;
+        background: $light;
+        color: $dark;
+    }
+    span {
+        color: $dark;
+        font-style: normal;
+        &:hover {
+            color: $dark;
+        }
+    }
+}

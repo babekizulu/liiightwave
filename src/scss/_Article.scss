@@ -1,0 +1,36 @@
+@import 'utils';
+.article {
+    @include grid1;
+    margin-left: 270px;
+    font-family: $robmon;
+    color: $light;
+    z-index: 1;
+    margin-bottom: 18px;
+}
+
+.article-header-container {
+    font-size: 2rem;
+    color: $light;
+    transition: $ei;
+    a {
+        position: relative;
+        cursor: pointer;
+        z-index: 2;
+        &:hover {
+            font-style: italic;
+            transition: $ei;
+            background: $light;
+            color: $dark;
+            text-decoration: underline;
+        }
+    }
+}
+
+.article-content-container {
+    position: relative;
+    @include centerFlex;
+    text-align: justify;
+    width: 1000px;
+    font-size: 1.2rem;
+    z-index: 1;
+}

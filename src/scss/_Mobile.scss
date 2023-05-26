@@ -1,0 +1,51 @@
+@import 'utils';
+@media screen and (max-width: 414px) {
+    .article-content-container {
+        width: 370px;
+    }
+    .repo-container {
+        a {
+            font-size: 1rem;
+        }
+    }
+
+    .ethics-policy-container {
+        width: 370px;
+    }
+}
+
+@media screen and (max-width: 412px) {
+    .page-header {
+        font-size: 1.2rem;
+    }
+    .article-content-container {
+        width: 340px;
+    }
+
+    .repo-container {
+        a {
+            font-size: 1rem;
+        }
+    }
+
+    .ethics-policy-container {
+        width: 340px;
+    }
+}
+
+@media screen and (max-width: 280px) {
+    .article-content-container {
+        width: 200px;
+    }
+    .repo-container {
+        padding: 3px;
+    }
+    .ethics-policy-container {
+        width: 200px;
+    }
+    .tablet-navbar {
+        li {
+            margin: 18px 9px;
+        }
+    }
+}

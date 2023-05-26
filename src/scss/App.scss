@@ -1,0 +1,37 @@
+@import 'utils';
+*::before,
+*::after,
+* {
+    box-sizing: border-box;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    @include wh100;
+    background: $dark;
+    overflow-x: hidden;
+}
+
+.app-container {
+    @include wh100;
+    @include grid1;
+}
+
+@import 'Model';
+@import 'Header';
+@import 'NavBar';
+@import 'Headline';
+@import 'Article';
+@import 'Home';
+@import 'Research';
+@import 'Development';
+@import 'Ethics';
+@import 'Apps';
+@import 'Support';
+@import 'Footer';
+@import 'Tablet';
+@import 'Mobile';

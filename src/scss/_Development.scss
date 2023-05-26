@@ -1,0 +1,32 @@
+@import 'utils';
+.development-page {
+    @include grid1;
+    position: relative;
+    top: 90px;
+}
+
+.repo-container {
+    @include centerFlex;
+    a {
+        width: fit-content;
+        border: 3px solid $light;
+        border-radius: 9px;
+        padding: 18px;
+        z-index: 3;
+        transition: $eio;
+        cursor: pointer;
+        text-decoration: none;
+        color: $light;
+        font-family: $robmon;
+        font-size: 2rem;
+        &:hover {
+            background: $light;
+            color: $dark;
+            transition: $eio;
+        }
+    }
+}
+
+.icon {
+    @include centerFlex;
+}

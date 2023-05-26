@@ -1,0 +1,16 @@
+@import 'utils';
+
+.footer-container {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    z-index: 3;
+    height: 50px;
+    width: 100%;
+    background: #1313135e;
+    backdrop-filter: blur(1.9px);
+}
+
+.footer {
+    @include centerFlex;
+}
