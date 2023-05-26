@@ -1,17 +1,17 @@
 //libs
 import React from 'react';
-//components
-import Link from './Link';
 
 const Article = ({ contentHeader, contentHref, content }) => {
   return (
     <div className='article'>
-      <Link
+      <a
         href={contentHref}
+        target='_BLANK'
         className='article-header-container'
+        rel='noreferrer'
       >
         {contentHeader}
-      </Link>
+      </a>
       <br />
       <div className='article-content-container'>{content}</div>
     </div>

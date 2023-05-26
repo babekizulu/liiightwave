@@ -14,14 +14,14 @@ const Scene = () => {
    const responsiveScreenHandler = () => {
     if (window.screen.width > 912) {
       setResponsive([1, 1, 1])
-      console.log('desktop')
+      console.log('desktop');
     };
     if(window.screen.width <= 912 && window.screen.width > 412) {
       setResponsive([0.8, 0.8, 0.8]);
       console.log('tablet');
     };
     if(window.screen.width <= 412) {
-      setResponsive([0.1, 0.1, 0.1]);
+      setResponsive([0.05, 0.05, 0.05]);
       console.log('mobile');
     };
    };

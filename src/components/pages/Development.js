@@ -1,7 +1,5 @@
 //libs
-import React, {useState, useEffect} from 'react';
-//components
-import Link from '../Link';
+import React, { useState, useEffect } from 'react';
 //icons
 import GitHubIcon from '@mui/icons-material/GitHub';
 
@@ -13,7 +11,7 @@ const Development = () => {
     if (window.screen.width <= 540) {
       setResponsive(true);
     }
-  }
+  };
   //side effects
   useEffect(() => {
     responsiveScreenHandler();
@@ -26,13 +24,18 @@ const Development = () => {
         </header>
       </div>
       <div className='repo-container'>
-        <Link
+        <a
           href='https://github.com/liiightwave/formuliii'
+          target='_BLANK'
           className='repo'
+          rel='noreferrer'
         >
-          <GitHubIcon fontSize={responsive ? 'medium' : 'large'} className='icon'/>
+          <GitHubIcon
+            fontSize={responsive ? 'medium' : 'large'}
+            className='icon'
+          />
           FORMULiii GitHub Repository
-        </Link>
+        </a>
       </div>
     </div>
   );
