@@ -32,7 +32,7 @@ const Ethics = () => {
           Integrity, and Mutual Respect among all employees and board members in
           the company. We do not condone any form of discrimination based on
           Gender, Sexual Orientation, Race, Ethnicity, Nationality and Economic
-          or Financial Standing. We condone any of these forms of discrimination
+          or Financial Standing. We do not condone any of these forms of discrimination
           both in the workplace, and in our dealings outside of the workplace,
           and in the provision of our services and customer support to our end
           users and clients. We take upon ourselves to act transparently with
