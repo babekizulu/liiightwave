@@ -21,7 +21,7 @@ const Scene = () => {
       console.log('tablet');
     };
     if(window.screen.width <= 412) {
-      setResponsive([0.2, 0.2, 0.2]);
+      setResponsive([0.1, 0.1, 0.1]);
       console.log('mobile');
     };
    };
