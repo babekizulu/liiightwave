@@ -29,7 +29,6 @@ const Development = () => {
         <Link
           href='https://github.com/liiightwave/formuliii'
           className='repo'
-          target={true}
         >
           <GitHubIcon fontSize={responsive ? 'medium' : 'large'} className='icon'/>
           FORMULiii GitHub Repository

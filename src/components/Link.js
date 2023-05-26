@@ -1,7 +1,7 @@
 //libs
 import React from 'react';
 
-const Link = ({ href, className, children, target }) => {
+const Link = ({ href, className, children}) => {
   const onClick = (e) => {
     if (e.metaKey || e.ctrlKey) {
       return;
@@ -14,7 +14,6 @@ const Link = ({ href, className, children, target }) => {
   };
   return (
     <a
-      target={target ? '_blank' : '_self'}
       href={href}
       className={className}
       onClick={onClick}

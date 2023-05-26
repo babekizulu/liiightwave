@@ -9,7 +9,6 @@ const Article = ({ contentHeader, contentHref, content }) => {
       <Link
         href={contentHref}
         className='article-header-container'
-        target={true}
       >
         {contentHeader}
       </Link>
