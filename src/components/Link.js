@@ -17,7 +17,6 @@ const Link = ({ href, className, children}) => {
       href={href}
       className={className}
       onClick={onClick}
-      rel='noreferrer'
     >
       {children}
     </a>
