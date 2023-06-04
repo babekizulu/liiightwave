@@ -1,41 +1,40 @@
 //libs
-import React, { useRef, useState, useEffect} from 'react';
-import { Canvas, useLoader} from '@react-three/fiber';
+import React, { useRef, useState, useEffect } from 'react';
+import { Canvas, useLoader } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import model from '../models/african_analytics.glb';
 const Scene = () => {
- 
   const gltf = useLoader(GLTFLoader, model);
   const lightBulb = useRef();
-   //state management
-   const [responsive, setResponsive] = useState([]);
-   //handlers
-   const responsiveScreenHandler = () => {
+  //state management
+  const [responsive, setResponsive] = useState([]);
+  //handlers
+  const responsiveScreenHandler = () => {
     if (window.screen.width > 912) {
-      setResponsive([1, 1, 1])
+      setResponsive([1, 1, 1]);
       console.log('desktop');
-    };
-    if(window.screen.width <= 912 && window.screen.width > 412) {
+    }
+    if (window.screen.width <= 912 && window.screen.width > 412) {
       setResponsive([0.8, 0.8, 0.8]);
       console.log('tablet');
-    };
-    if(window.screen.width <= 412) {
-      setResponsive([0.05, 0.05, 0.05]);
+    }
+    if (window.screen.width <= 412) {
+      setResponsive([0.02, 0.02, 0.02]);
       console.log('mobile');
-    };
-   };
-   //side effects
-   useEffect(() => {
+    }
+  };
+  //side effects
+  useEffect(() => {
     responsiveScreenHandler();
-   }, []);
+  }, []);
   // useFrame(({ clock }) => {
   //   lightBulb.current.rotation.x = clock.getElapsedTime();
   // });
   return (
     <primitive
       position={[0, -2, 0]}
-      scale={ responsive ? [0.8, 0.8, 0.8]:[1, 1, 1]}
+      scale={responsive ? [0.8, 0.8, 0.8] : [1, 1, 1]}
       rotation={[0, Math.PI, 0]}
       object={gltf.scene}
       ref={lightBulb}

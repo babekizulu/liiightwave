@@ -1,16 +1,15 @@
 @import 'utils';
 @media screen and (max-width: 414px) {
     .article-content-container {
-        width: 370px;
+        width: 300px;
     }
     .repo-container {
         a {
-            font-size: 1rem;
+            font-size: 0.8rem;
         }
     }
-
     .ethics-policy-container {
-        width: 370px;
+        width: 300px;
     }
 }
 
@@ -19,23 +18,21 @@
         font-size: 1.2rem;
     }
     .article-content-container {
-        width: 340px;
+        width: 300px;
     }
-
     .repo-container {
         a {
             font-size: 1rem;
         }
     }
-
     .ethics-policy-container {
-        width: 340px;
+        width: 300px;
     }
 }
 
 @media screen and (max-width: 280px) {
     .article-content-container {
-        width: 200px;
+        width: 180px;
     }
     .repo-container {
         padding: 3px;
