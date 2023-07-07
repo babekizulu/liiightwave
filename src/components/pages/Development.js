@@ -25,7 +25,7 @@ const Development = () => {
       </div>
       <div className='repo-container'>
         <a
-          href='https://github.com/liiightwave/formuliii'
+          href='https://github.com/babekizulu/formuliii'
           target='_BLANK'
           className='repo'
           rel='noreferrer'
