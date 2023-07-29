@@ -8,7 +8,6 @@ import Footer from './Footer';
 import Home from './pages/Home';
 import Research from './pages/Research';
 import Development from './pages/Development';
-import Ethics from './pages/Ethics';
 //styling
 import '../scss/App.scss';
 
@@ -25,10 +24,7 @@ const App = () => {
       <Route path='/development'>
         <Development />
       </Route>
-      <Route path='/ethics'>
-        <Ethics />
-      </Route>
-      <Footer/>
+      <Footer />
       {/* <Route path='/careers'>
         <Careers />
       </Route>

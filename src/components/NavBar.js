@@ -9,32 +9,27 @@ const NavBar = () => {
       <ul>
         <li>
           <Link href='/' className='nav-item'>
-            home<span>_</span>
+            home
           </Link>
         </li>
         <li>
           <Link href='/research' className='nav-item'>
-            research<span>_</span>
+            research
           </Link>
         </li>
         <li>
           <Link href='/development' className='nav-item'>
-            development<span>_</span>
-          </Link>
-        </li>
-        <li>
-          <Link href='/ethics' className='nav-item'>
-            ethics<span>_</span>
+            development
           </Link>
         </li>
         {/* <li>
           <Link href='/careers' className='nav-item'>
-            careers<span>_</span>
+            careers
           </Link>
         </li>
         <li>
           <Link href='/apps' className='nav-item'>
-            apps<span>_</span>
+            apps
           </Link>
         </li> */}
         {/* <li>

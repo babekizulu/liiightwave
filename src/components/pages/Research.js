@@ -8,7 +8,7 @@ const Research = () => {
     <div className='research-page'>
       <div className='page-header-container'>
         <header className='page-header'>
-          <h1>research_</h1>
+          <h1>research</h1>
         </header>
       </div>
       <Article

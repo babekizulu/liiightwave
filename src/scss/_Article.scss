@@ -2,7 +2,7 @@
 .article {
     @include grid1;
     margin-left: 270px;
-    font-family: $robmon;
+    font-family: $qstr;
     color: $light;
     z-index: 1;
     margin-bottom: 18px;
@@ -31,6 +31,6 @@
     @include centerFlex;
     text-align: justify;
     width: 1000px;
-    font-size: 1.2rem;
+    font-size: 1.4rem;
     z-index: 1;
 }

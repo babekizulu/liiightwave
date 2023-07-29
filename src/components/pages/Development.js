@@ -20,7 +20,7 @@ const Development = () => {
     <div className='development-page'>
       <div className='page-header-container'>
         <header className='page-header'>
-          <h1>development_</h1>
+          <h1>development</h1>
         </header>
       </div>
       <div className='repo-container'>

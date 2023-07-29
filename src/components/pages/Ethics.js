@@ -6,7 +6,7 @@ const Ethics = () => {
     <div className='ethics-page'>
       <div className='page-header-container'>
         <div className='page-header'>
-          <h1>ethics_</h1>
+          <h1>ethics</h1>
         </div>
       </div>
       <div className='ethics-policy-container'>
@@ -32,27 +32,27 @@ const Ethics = () => {
           Integrity, and Mutual Respect among all employees and board members in
           the company. We do not condone any form of discrimination based on
           Gender, Sexual Orientation, Race, Ethnicity, Nationality and Economic
-          or Financial Standing. We do not condone any of these forms of discrimination
-          both in the workplace, and in our dealings outside of the workplace,
-          and in the provision of our services and customer support to our end
-          users and clients. We take upon ourselves to act transparently with
-          regards to our use of Data from end-users, and endeavor to protect
-          against the misuse of this Data. We intend to develop our technology
-          in an open-source manner, whilst still protecting information which is
-          critical to keeping competitive advantage. We commit to taking all
-          possible measures to ensure that the technologies which we develop are
-          ethical and do not pose a threat to the wellbeing of any user, or
-          humanity in general; this means that we are making a commitment to
-          make the best possible effort to consult with experts when working on
-          technologies or capabilities which, we have reason to believe could
-          cause these threats and dangers. We commit to sharing our knowledge
-          with the world. At LiiiGHTWAVE, we care about developing technology
-          that helps to bring positive growth and development in the world. We
-          aim to deliver technology which is useful and beneficial to our
-          end-users, and we care about delivering these services in an ethical
-          and safe manner. We acknowledge that, with great power comes great
-          responsibility, and we commit to taking every possible measure and
-          action to do our work responsibly.
+          or Financial Standing. We do not condone any of these forms of
+          discrimination both in the workplace, and in our dealings outside of
+          the workplace, and in the provision of our services and customer
+          support to our end users and clients. We take upon ourselves to act
+          transparently with regards to our use of Data from end-users, and
+          endeavor to protect against the misuse of this Data. We intend to
+          develop our technology in an open-source manner, whilst still
+          protecting information which is critical to keeping competitive
+          advantage. We commit to taking all possible measures to ensure that
+          the technologies which we develop are ethical and do not pose a threat
+          to the wellbeing of any user, or humanity in general; this means that
+          we are making a commitment to make the best possible effort to consult
+          with experts when working on technologies or capabilities which, we
+          have reason to believe could cause these threats and dangers. We
+          commit to sharing our knowledge with the world. At LiiiGHTWAVE, we
+          care about developing technology that helps to bring positive growth
+          and development in the world. We aim to deliver technology which is
+          useful and beneficial to our end-users, and we care about delivering
+          these services in an ethical and safe manner. We acknowledge that,
+          with great power comes great responsibility, and we commit to taking
+          every possible measure and action to do our work responsibly.
         </p>
         <br />
         <br />
