@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /account
+Disallow: /sign-in
+Disallow: /sign-up
+Sitemap: https://liiightwave.com/sitemap.xml
