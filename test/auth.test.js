@@ -52,7 +52,11 @@ test('sign out others preserves only the calling session',async()=>{
   const list=(await a.get('/api/account/sessions')).body.sessions;assert.equal(list.length,1);assert.equal(list[0].current,true);assert.equal(list[0].token_hash,undefined);
 });
 test('expired and forged sessions do not authenticate',async()=>{
+  const agent=request.agent(app);
+  await post(agent,'/api/auth/sign-in',{email:user.email,password:'another-long-password!'}).expect(200);
+  assert.ok((await agent.get('/api/auth/session')).body.user);
   await db.query("UPDATE sessions SET expires_at=now() - interval '1 day'");
+  assert.equal((await agent.get('/api/auth/session')).body.user,null);
   const forged=await request(app).get('/api/auth/session').set('Cookie',`liiightwave_session=${'a'.repeat(64)}`);assert.equal(forged.body.user,null);
   const invalid=await request(app).get('/api/auth/session').set('Cookie','liiightwave_session=bad');assert.equal(invalid.body.user,null);
 });

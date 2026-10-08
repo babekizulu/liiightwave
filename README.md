@@ -15,10 +15,11 @@ Requires Node 22.12+ and PostgreSQL 16+.
 
 ## Production
 
-- Netlify: repository root, `npm run build`, publish `dist`, Node 22. Both domains can use the same source. The accounts hostname opens the account dashboard or sign-in screen.
+- Netlify: existing `liiightwave` project, repository root, `npm run build`, publish `dist`, Node 22. `liiightwave.com` is the primary domain and `accounts.liiightwave.com` is a domain alias on the same project. The accounts hostname opens the account dashboard or sign-in screen.
 - Railway: Dockerfile at the repository root. Create a PostgreSQL service and set `DATABASE_URL` to `${{Postgres.DATABASE_URL}}`, `NODE_ENV=production`, and `ALLOWED_ORIGINS=https://liiightwave.com,https://www.liiightwave.com,https://accounts.liiightwave.com,https://notes.liiightwave.com`.
-- Set the `/api/*` rewrite in `netlify.toml` to the actual Railway public service domain. The healthcheck is `/api/health` and tests the database connection.
-- Route `accounts.liiightwave.com` to its Netlify project and keep the existing core site's custom domain for the production replacement.
+- The `/api/*` rewrite in `netlify.toml` proxies to `https://liiightwave-production.up.railway.app`. The healthcheck is `/api/health` and tests the database connection.
+- Railway project `fearless-quietude` contains the `liiightwave` API and `Postgres` services. Set `PORT=3001`, public networking target port 3001, and healthcheck `/api/health` in Railway's service settings. GitHub `main` deploys automatically on both providers. Railway no longer accepts the legacy config-as-code file for new services, so deployment settings are managed in its dashboard.
+- Hostinger DNS: `accounts` CNAME points to `liiightwave.netlify.app`, TTL 300. Netlify manages HTTPS for the core and accounts domains.
 - Railway runs one API replica. Rate limits are process-local; use a shared limiter before scaling horizontally. Database sessions already persist across deployments.
 - Railway's private database network is the default. For a remote TLS database, set `PGSSLMODE=require` and, if needed, `PGSSLROOTCERT` to a trusted CA file. Certificate verification stays enabled.
 - Keep `.env`, database credentials, and local caches out of Git. The API does not require a signing secret: sessions use random 256-bit tokens and store only SHA-256 token hashes.
