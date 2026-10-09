@@ -8,7 +8,7 @@ Central account management is provisionally `https://liiightwave.com/sso`. The e
 
 ## ADR 002 · Provider selection remains pending
 
-No provider tenant, plan, credentials or issuer was found in the accessible project configurations. A checkbox and documentation alone do not satisfy the required working proof. Neither Auth0 nor Cognito is selected for production. Implement one standards-based OIDC boundary with `openid-client` and JOSE, disabled until a reviewed policy exists. Do not implement competing credential authority, token minting or local recovery.
+Initially no provider tenant, plan, credentials or issuer was found in the project configurations. The owner subsequently supplied Auth0 access; see ADR 006 and `AUTH0-SETUP.md`. A checkbox and documentation alone do not satisfy the working proof. Neither Auth0 nor Cognito is selected for production. Keep the standards-based OIDC boundary with `openid-client` and JOSE disabled until a reviewed policy exists. Do not implement competing credential authority, token minting or local recovery.
 
 Shortlist based on official documentation checked 9 October 2026:
 
@@ -46,3 +46,11 @@ If keeping authenticated frontend traffic on Netlify, first prove exact-origin r
 Public learning remains useful without an account. One short sourced chapter and deterministic path suggestions avoid fabricated encyclopedia/AI output. Mentor copy is editorial; no AI API or speech service runs. Historical figure personas, character artwork, rich orb dragging/zoom, uploads, PWA/offline caches, capstones, certificates and advanced atlas remain future work. Ariadne is explicitly labelled a mythic guide in the provisional persona record, not represented as a historical person; replace/extend this with a sourced historical-figure catalogue later.
 
 No existing mentor art was found, so the UI uses mentor names and editorial prompts rather than inventing replacement mascots. No stock art licensing claims are made. The chapter links to its credited museum source without copying their imagery.
+
+## ADR 006 · Auth0 development spike and assurance boundary
+
+Accepted for development only, 9 October 2026. Reuse the owner's empty Auth0 Development tenant, two separate confidential web clients and an Auth0-managed custom domain `auth-staging.liiightwave.com`. The name deliberately separates development credentials from the proposed production RP ID. Hosted login uses the core navy/pale palette; credential UI and authority remain with Auth0.
+
+A scoped Post Login Action rejects missing passkey-method evidence. This is defense in depth, not proof of required user verification or a real authenticated application. Auth0 requires passwords to remain enabled on this connection; UI configuration alone therefore cannot enforce app assurance. Progressive enrollment is off. Do not manufacture verified-UV, acr/amr or recovery assurance from the passkey method. The existing BFF remains disabled.
+
+Required-UV enforcement/evidence and central revocation remain unresolved provider gates. Back-channel logout is documented as Enterprise; do not interpret public metadata or trial access as a lasting plan entitlement. No paid commitment was made. A supported measured revocation fallback may be assessed, but local security-version checks alone do not observe provider compromise recovery. If Auth0 cannot satisfy a must-have, revisit provider selection; never weaken the requirements to reach the demonstration milestone.

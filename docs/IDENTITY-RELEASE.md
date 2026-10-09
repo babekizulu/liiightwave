@@ -8,7 +8,8 @@
 | Local standalone | 127.0.0.1:3002, explicit matching APP_ORIGIN | disabled | no DB required for public reading |
 | Automated browser | 127.0.0.1:3012 | disabled | no private fixtures in browser |
 | Automated API/protocol | isolated PGlite and signed transport fixtures | test-only dependency injection | disposable data, no email |
-| Staging | not provisioned; select one stable HTTPS origin per client | separate issuer/clients and RP ID from production | new DB, provider test mail only |
+| Development provider | local BFF callbacks on 127.0.0.1:3001 and :3002 | Auth0 issuer/RP ID auth-staging.liiightwave.com; two clients; app identity disabled | no account enrolled or secret installed |
+| Staging applications | not provisioned; select one stable HTTPS origin per client | development provider spike only, no production approval | new DB, provider test mail only |
 | Existing production core | liiightwave.com + accounts.liiightwave.com, Netlify /api → verified existing Railway host | existing password service remains | existing production data untouched |
 | Intended production Cretans | cretans.liiightwave.com, not resolving during discovery | blocked | unprovisioned |
 | Proposed central auth | auth.liiightwave.com, not created | issuer/RP ID requires provider proof first | provider-owned credentials |
@@ -17,10 +18,12 @@
 
 Initial final verification: TypeScript check, lint and production build passed. 21 API/protocol tests passed, including actual library signature/claim validation with ephemeral test signing keys. Ten core regression tests passed, including the legacy-session/SSO separation check. Both dependency sets reported zero known vulnerabilities on installation. Six functional browser tests plus a screenshot capture passed, including the actual Talisman renderer/worker round-trip and ambiguous/unsupported/oversized upload rejection. Final audit and repository checks are recorded in the delivered implementation report. These are local results only.
 
+Auth0 configuration increment: TypeScript check and lint passed; all 27 local tests passed (the existing 21 plus six Action tests), with zero skipped. Full dependency audit reported zero vulnerabilities. Real provider verification is limited to DNS/TLS/discovery, dashboard configuration/deployment and a hosted-login page preview. No actual user authentication occurred. See `AUTH0-SETUP.md` for the evidence boundary.
+
 ## Release blockers
 
-1. No accessible selected identity tenant. Must prove real enrollment + second authenticator + user verification + weak-route rejection + fresh management + recovery restrictions with two registered clients and a real device. Test virtual WebAuthn separately; no such enrollment test has been executed.
-2. No verified provider central-logout/security-management/recovery integration. Complete notifications, authenticator/grant revocation, account deletion and replay/race checks through supported provider APIs. No universal support override.
+1. Auth0 development tenant configured; see `AUTH0-SETUP.md`. Required UV enforcement and trusted evidence remain unproven. Must prove real enrollment + second authenticator + weak-route rejection + fresh management + recovery restrictions with the two registered clients and a real device. No real or virtual enrollment test has been executed.
+2. No verified provider central-logout/security-management/recovery integration. Auth0 back-channel logout is documented/labelled Enterprise; no paid plan selected. Verify actual support or a measured fallback. Complete notifications, authenticator/grant revocation, account deletion and replay/race checks through supported provider APIs. No universal support override.
 3. No real Netlify/Railway callback, cookie, cache, trust-proxy, origin-ingress or deployed revocation measurement. Keep existing ingress unchanged. Evaluate single-origin Cretans deployment before adding proxy complexity.
 4. No verified LiiiGHTWAVE Resend sender. Inspect Hostinger DNS and use exact provider-generated DKIM/SPF values; do not alter root MX or invent records. Disable tracking at the actual sender/domain configuration. A durable encrypted outbox, authenticated webhook flow and test-recipient-only delivery remain to implement; no arbitrary send endpoint exists.
 5. No billing integration. Paid APIs deny missing/expired entitlements. Webhooks, event ordering and purchases are not implemented; redirects never grant access.
