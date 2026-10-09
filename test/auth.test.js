@@ -74,3 +74,13 @@ test('input limits and production cookie attributes are enforced',async()=>{
   assert.match(response.headers['set-cookie'][0],/^__Host-liiightwave=/);assert.match(response.headers['set-cookie'][0],/Secure/);assert.doesNotMatch(response.headers['set-cookie'][0],/Domain=/);
   assert.equal(response.headers['cache-control'],'no-store');
 });
+test('legacy password session cannot cross into the new identity boundary',async()=>{
+  const agent=request.agent(app);
+  await post(agent,'/api/auth/sign-in',{email:user.email,password:'another-long-password!'}).expect(200);
+  await agent.get('/api/identity/account').expect(401);
+  const status=await agent.get('/api/identity/status').expect(200);
+  assert.equal(status.body.enabled,false);
+  assert.equal(status.headers['cache-control'],'private, no-store');
+  assert.equal(status.headers['x-frame-options'],'DENY');
+  assert.ok(status.headers['content-security-policy']);
+});

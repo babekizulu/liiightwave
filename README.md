@@ -59,3 +59,7 @@ The API suite covers PostgreSQL health, sign-up, password hashing, secure cookie
 ## Rollback
 
 The prior Netlify production deployment is `69567ac3dc78b0cf4f759872` from `babekizulu/liiightwave_v2`, commit `85980e1`. To roll back the core site, publish that retained deployment through Netlify. The new PostgreSQL schema is additive and belongs to a separate account database; no previous website database is modified.
+
+## Passkey identity foundation (local feature branch)
+
+The /sso preview and /api/identity namespace are disabled by default. Existing accounts remain unchanged. Read docs/IDENTITY-ARCHITECTURE.md and docs/IDENTITY-RELEASE.md before activation. Use a dedicated IDENTITY_DATABASE_URL and the explicit migrate:identity command. No provider, recovery, email, billing or production cutover has been verified. The new Cretans entry targets the user-confirmed cretans.liiightwave.com address, whose DNS is not yet provisioned.

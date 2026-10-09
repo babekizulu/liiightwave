@@ -1,3 +1,4 @@
+import {createIdentityRouter} from './identity/router.js';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -25,6 +26,7 @@ export function createApp(db, options = {}) {
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
   app.use(helmet());
+  app.use('/api/identity',createIdentityRouter(options.identityDb ?? null, options.identityConfig ?? {enabled:false,appId:'liiightwave',origin:origins[0],production,cookie:production?'__Host-lw-liiightwave':'lw-liiightwave'}, options.identityProvider));
   app.use(cors({origin:(origin, cb)=>cb(null, !origin || origins.includes(origin)),credentials:true}));
   app.use('/api', (req,res,next)=>{ res.set('Cache-Control','no-store'); next(); });
   app.use(express.json({limit:'16kb'}));

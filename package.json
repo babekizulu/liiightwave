@@ -13,7 +13,8 @@
     "preview": "vite preview --host 127.0.0.1",
     "start": "node --env-file-if-exists=.env server/index.js",
     "migrate": "node --env-file-if-exists=.env server/migrate.js",
-    "test": "node --test --test-concurrency=1 test/*.test.js"
+    "test": "node --test --test-concurrency=1 test/*.test.js",
+    "migrate:identity": "node --env-file-if-exists=.env server/migrate-identity.js"
   },
   "dependencies": {
     "@fontsource/cormorant-garamond": "^5.3.0",
@@ -27,7 +28,10 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.9.3",
-    "zod": "^4.1.11"
+    "zod": "^4.1.11",
+    "openid-client": "^6.8.1",
+    "jose": "^6.1.0",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.3.10",

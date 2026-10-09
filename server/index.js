@@ -1,9 +1,16 @@
+import {loadConfig} from './identity/config.js';
+import {createProvider} from './identity/provider.js';
+import {connectDatabase} from './identity/db.js';
 import { db } from './db.js';
 import { migrate } from './migrate.js';
 import { createApp } from './app.js';
 await migrate(db);
-const app=createApp(db);
+const identityConfig=loadConfig({...process.env,IDENTITY_APP_ID:'liiightwave',APP_ORIGIN:process.env.IDENTITY_APP_ORIGIN||'https://liiightwave.com'});
+if(identityConfig.enabled&&!process.env.IDENTITY_DATABASE_URL)throw new Error('A dedicated IDENTITY_DATABASE_URL is required.');
+const identityDb=identityConfig.enabled?connectDatabase(process.env.IDENTITY_DATABASE_URL):null;
+const identityProvider=identityConfig.enabled?await createProvider(identityConfig):null;
+const app=createApp(db,{identityConfig,identityDb,identityProvider});
 const server=app.listen(Number(process.env.PORT || 3001),'0.0.0.0',()=>console.log('LiiiGHTWAVE API is listening.'));
 const cleanup=setInterval(()=>db.query('DELETE FROM sessions WHERE expires_at < now()').catch(()=>console.error('Session cleanup failed')),3600000);
 cleanup.unref();
-for(const signal of ['SIGTERM','SIGINT']) process.on(signal,()=>{clearInterval(cleanup);server.close(async()=>{await db.end();process.exit(0);});setTimeout(()=>process.exit(1),10000).unref();});
+for(const signal of ['SIGTERM','SIGINT']) process.on(signal,()=>{clearInterval(cleanup);server.close(async()=>{await identityDb?.close();await db.end();process.exit(0);});setTimeout(()=>process.exit(1),10000).unref();});
