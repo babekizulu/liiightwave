@@ -1,6 +1,6 @@
 # Auth0 development setup · 9 October 2026
 
-**Provider configuration is live; application identity remains disabled.** This is a development spike, not the real two-client acceptance milestone or a production provider decision. No account/passkey was enrolled, secret exported, paid plan selected, or production application deployed.
+**Provider configuration and the two-client diagnostic work; application identity remains disabled.** The owner completed real passkey enrollment. Both development clients verified signed responses for the same account, with shared provider-session reuse and local-callback confirmation. Silent `prompt=none` returned `consent_required`. This is not full application acceptance or a production provider decision. Development secrets are installed in an owner-only directory. No paid plan was selected or production application deployed. See `AUTH0-LIVE-TEST.md` for the latest integration evidence.
 
 ## Verified provider and DNS configuration
 
@@ -21,7 +21,7 @@
 | ID-token lifetime | 300 seconds | 300 seconds |
 | Connection | Database only | Database only |
 
-Implicit, refresh, client credentials, password, OTP, native Passkey and token-exchange grants are disabled on these clients. Google is disabled for both. No wildcard or production callbacks and no browser token exchange/CORS configuration were added. BFF code requests S256; successful real PKCE exchange and provider rejection of missing PKCE remain to test. No application client secret was revealed, copied or installed.
+Implicit, refresh, client credentials, password, OTP, native Passkey and token-exchange grants are disabled on these clients. Google is disabled for both. No wildcard or production callbacks and no browser token exchange/CORS configuration were added. BFF code requests S256; real code/PKCE exchanges succeeded for both clients. Provider rejection of a request without PKCE remains to test. Both Client Secret (Post) methods are verified; development secrets are securely installed only for the local diagnostic, outside the repositories.
 
 Database `Username-Password-Authentication`, ID `con_yArftYWRRZ9e9xQ9`: New Universal Login, Identifier First, passkey button plus autofill, progressive enrollment off, local enrollment on. Password remains enabled as required by Auth0; the Action rejects its use for these clients. Turning off progressive enrollment avoids automatically upgrading a password login into new passkey enrollment. Local enrollment after a cross-device passkey still requires review against the unresolved UV/freshness policy.
 
@@ -39,16 +39,16 @@ Six local tests cover weaker methods on both clients, malformed evidence, anothe
 
 1. **Required user verification is not proven.** The inspected passkey settings do not expose a required-UV control. Auth0 documents a passkey method signal, but the reviewed event documentation does not establish a trustworthy verified-UV signal. Its embedded API examples use `userVerification: preferred`; that alone does not establish hosted-login enforcement. Do not infer UV from a biometric prompt, successful login, `passkey`, `mfa`, or user metadata. Obtain supported enforcement/evidence and test both UV success and UV=false rejection before writing a provider policy. If Auth0 cannot meet this must-have, reconsider the provider instead of weakening it or adding an application credential store.
 2. **Central revocation is not proven.** Auth0 documents back-channel logout as Enterprise and the dashboard marks it accordingly. No upgrade was purchased. Discovery advertising support is insufficient. Verify actual entitlement/delivery or implement and measure a supported bounded fallback tied to provider session/recovery changes. Local shared security-version invalidation already exists but does not independently detect provider recovery/revocation.
-3. **Real identity milestone remains unexecuted.** After the first two gates, securely install distinct BFF client secrets and provision the dedicated identity DB. Use real code/PKCE exchanges and signed claims; establish a provider-specific assurance adapter based on evidence. Complete human-controlled enrollment and a real device test, both-client SSO, stale/weak-session rejection, additional-authenticator management, recovery, logout and ownership tests. A login-page preview is not a sign-in test.
+3. **Full application acceptance remains incomplete.** Real enrollment, both-client signed exchanges/session reuse, forced fresh authentication and browser provider-session logout passed in the isolated diagnostic. Initial responses omitted `acr`/`amr`; fresh sign-in returned `amr=["phr"]` but no `acr` or established required-UV evidence. After the first two gates, provision the dedicated application identity DB and establish a provider-specific assurance adapter based on supported evidence. Complete stable-HTTPS silent SSO, stale/weak-session rejection, additional-authenticator management, recovery, all-device logout and private-data ownership tests. Do not count diagnostic cookies as application sessions.
 4. **Deployment remains unprovisioned.** Register stable staging application origins only after selecting the topology. Verify HTTPS/cookies/cache/ingress, DB roles/backup restore, and a test email sender. Production promotion requires the already documented release gates and cutover approval. Do not repoint existing account routes.
 
 The existing strict policy schema is an application contract, not an assertion that Auth0 emits its fields. No `OIDC_POLICY_FILE` with invented `acr`, `amr`, UV or `backchannelVerified` values was created. Both applications remain `IDENTITY_ENABLED=false` by default.
 
 ## Evidence boundaries
 
-Verified against the real service: custom-domain DNS/TLS/discovery; dashboard client/passkey/session settings; Action deployment and flow attachment; the actual Cretans hosted login rendering at the custom domain with passkey button and no social button. The login preview submitted no identifier or credential and performed no code exchange.
+Verified against the real service: custom-domain DNS/TLS/discovery; dashboard client/passkey/session settings; Action deployment and flow attachment; hosted login at the custom domain; human passkey enrollment; both clients' signed code/PKCE exchanges; same issuer/subject and provider-session reuse with unchanged auth_time; forced fresh authentication with newer auth_time; browser provider-session logout followed by `login_required` on both clients. See `AUTH0-LIVE-TEST.md` for exact results and limitations.
 
-Not verified: real signup, signed token claims, required UV, adequate-session SSO to both clients, weak/recovered-session rejection against Auth0, second authenticator, provider account deletion/export/recovery, central revocation, post-trial entitlement, or any staged application deployment. Production was not changed.
+Not verified: required UV, full application acceptance, completely silent SSO on stable HTTPS origins, weak/recovered-session rejection against Auth0, second authenticator, provider account deletion/export/recovery, all-device central revocation, post-trial entitlement, or any staged application deployment. Production was not changed.
 
 ## Official references checked 9 October 2026
 
