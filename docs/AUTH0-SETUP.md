@@ -1,5 +1,8 @@
 # Auth0 development setup · 9 October 2026
 
+**10 October decision:** Auth0 hosted Universal Login is not approved for the required policy. Support reports required-UV and recovery/enrollment incompatibilities; these are vendor statements, not reproduced results. Temporary HTTPS compute is stopped and the previous device-verification handoff is superseded. See [AUTH0-ACCEPTANCE-DECISION.md](AUTH0-ACCEPTANCE-DECISION.md).
+
+
 **Provider configuration and the two-client diagnostic work; application identity remains disabled.** The owner completed real passkey enrollment. Both development clients verified signed responses for the same account, with shared provider-session reuse and local-callback confirmation. Silent `prompt=none` returned `consent_required`. This is not full application acceptance or a production provider decision. Development secrets are installed in an owner-only directory. No paid plan was selected or production application deployed. See `AUTH0-LIVE-TEST.md` for the latest integration evidence.
 
 ## Verified provider and DNS configuration

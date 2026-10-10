@@ -1,5 +1,8 @@
 # Real Auth0 integration test · 9 October 2026
 
+**10 October decision:** Auth0 hosted Universal Login is not approved for the required policy. Support reports required-UV and recovery/enrollment incompatibilities; these are vendor statements, not reproduced results. Temporary HTTPS compute is stopped and the previous device-verification handoff is superseded. See [AUTH0-ACCEPTANCE-DECISION.md](AUTH0-ACCEPTANCE-DECISION.md).
+
+
 The two development clients now have a runnable local real-provider diagnostic. It uses the **same OIDC protocol transport as the applications**. It does not grant application accounts, application sessions, notes/progress access or entitlements. Required-UV and provider revocation remain release gates.
 
 ## Implemented

@@ -9,7 +9,7 @@
 | Automated browser | 127.0.0.1:3012 | disabled | no private fixtures in browser |
 | Automated API/protocol | isolated PGlite and signed transport fixtures | test-only dependency injection | disposable data, no email |
 | Development provider | real-provider diagnostic callbacks on 127.0.0.1:3001 and :3002 | Auth0 issuer/RP ID auth-staging.liiightwave.com; two clients; app identity disabled | owner-only development secrets and isolated diagnostic DB; real enrollment and same-account session reuse passed |
-| Staging applications | not provisioned; select one stable HTTPS origin per client | development provider spike only, no production approval | new DB, provider test mail only |
+| HTTPS staging diagnostic | two isolated Railway HTTPS diagnostics; compute stopped 10 October | provider acceptance blocked; app identity disabled | new diagnostic PostgreSQL volume retained |
 | Existing production core | liiightwave.com + accounts.liiightwave.com, Netlify /api → verified existing Railway host | existing password service remains | existing production data untouched |
 | Intended production Cretans | cretans.liiightwave.com, not resolving during discovery | blocked | unprovisioned |
 | Proposed central auth | auth.liiightwave.com, not created | issuer/RP ID requires provider proof first | provider-owned credentials |
@@ -22,11 +22,15 @@ Auth0 configuration increment: TypeScript check and lint passed; all 27 local te
 
 Real-provider diagnostic increment: 30 local tests, typecheck, lint and build passed; audit reported zero vulnerabilities. Core's ten regression tests and build passed. Both real clients returned expected `login_required` before enrollment. Human passkey enrollment, both clients' real signed code/PKCE exchanges and same-account session reuse passed. Loopback silent SSO returned `consent_required`. Twenty focused HTTP boundary checks passed. Full application acceptance remains gated; see `AUTH0-LIVE-TEST.md`.
 
+## Provider decision · 10 October 2026
+
+Auth0 hosted Universal Login is not accepted under the stricter policy. Case 03056719 reports UV=false acceptance and no native protection against recovery-to-replacement enrollment; refresh-claim statements conflict. These are vendor statements, not independently reproduced tests. See AUTH0-ACCEPTANCE-DECISION.md for the required demonstrations and stopped staging status. Application identity stays disabled.
+
 ## Release blockers
 
 1. Auth0 development tenant configured; see `AUTH0-SETUP.md`. Real enrollment, same-account provider-session reuse and forced fresh authentication passed in the diagnostic. Required UV enforcement and trusted evidence remain unproven: initial claims omit `acr`/`amr`; fresh sign-in returns `amr=["phr"]` without an established required-UV guarantee. Must prove second authenticator, weak-route rejection, fresh management and recovery restrictions with the two registered clients and a real device before granting application access.
 2. Browser provider-session logout passed: subsequent requests from both clients returned `login_required`. All-device central revocation/security-management/recovery integration remains unverified. Auth0 back-channel logout is documented/labelled Enterprise; no paid plan selected. Verify actual support or a measured fallback. Complete notifications, authenticator/grant revocation, account deletion and replay/race checks through supported provider APIs. No universal support override.
-3. No real Netlify/Railway callback, cookie, cache, trust-proxy, origin-ingress or deployed revocation measurement. Keep existing ingress unchanged. Evaluate single-origin Cretans deployment before adding proxy complexity.
+3. Isolated Railway HTTPS diagnostics passed cookie, cache, origin/CSRF and forwarded-origin rejection checks on 9 October, then their compute was stopped on 10 October. No successful HTTPS code exchange or provider-wide deployed revocation measurement is recorded. Full-application/Netlify ingress remains unvalidated. Resume only against a supported enforcement and negative-test plan; keep production ingress unchanged.
 4. No verified LiiiGHTWAVE Resend sender. Inspect Hostinger DNS and use exact provider-generated DKIM/SPF values; do not alter root MX or invent records. Disable tracking at the actual sender/domain configuration. A durable encrypted outbox, authenticated webhook flow and test-recipient-only delivery remain to implement; no arbitrary send endpoint exists.
 5. No billing integration. Paid APIs deny missing/expired entitlements. Webhooks, event ordering and purchases are not implemented; redirects never grant access.
 6. Runtime DB roles, backups/restore, operational alerts and threat-model review remain required. Production user/data counts have not been inspected. Do not migrate or delete legacy users.
