@@ -15,7 +15,7 @@ const AuthContext=createContext();
 const useAuth=()=>useContext(AuthContext);
 const products=[
   {name:'LiiiGHTNOTES',category:'THOUGHT, UNINTERRUPTED',description:'A place for your notes, ideas, and the connections between them.',url:'https://notes.liiightwave.com',symbol:'≋'},
-  {name:'ALEXANDRiiiA',category:'THE PAST, RECONSIDERED',description:'Explore historical knowledge. Follow a question somewhere unexpected.',url:'https://alexandriiia.com',symbol:'⌘'},
+  {name:'Cretans',category:'A THREAD THROUGH HISTORY',description:'Investigate the ancient world. Follow evidence, weigh interpretations, and build your own historical argument.',url:'https://cretans.liiightwave.com',symbol:'△'},
   {name:'SAERBRIDGE',category:'CURIOSITY, CONNECTED',description:'Discover a wider world of research, learning, and exploration.',url:'https://saerbridge.com',symbol:'↗'}
 ];
 function AuthProvider({children}) {
