@@ -7,6 +7,7 @@ import {parseTalisman,newTalisman} from './talisman.js';
 import {assertAssurance} from './provider.js';
 import {lookupSession} from './session.js';
 import {verifyPasswordEvent} from './password-events.js';
+import {isMemberPolicy} from './config.js';
 
 const onboarding=z.object({name:z.string().trim().min(1).max(80),interests:z.string().trim().max(500),path:z.enum(['scholar','explorer','mixed'])}).strict();
 const note=z.object({title:z.string().trim().min(1).max(120),body:z.string().trim().min(1).max(10000)}).strict();
@@ -18,7 +19,7 @@ export function createIdentityRouter(db,c,provider){
  const txCookie=c.cookie+'-transaction',onCookie=c.cookie+'-onboarding';
  r.use((_req,res,next)=>{res.set({'Cache-Control':'private, no-store','CDN-Cache-Control':'no-store','Netlify-CDN-Cache-Control':'no-store','Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff','X-Frame-Options':'DENY'});next();});
  r.use(cookieParser());
- r.get('/status',(_req,res)=>res.json({enabled:c.enabled,app:c.appId,billing:false,recovery:c.enabled&&c.policy?.kind==='auth0-member-v1'}));
+ r.get('/status',(_req,res)=>res.json({enabled:c.enabled,app:c.appId,billing:false,recovery:c.enabled&&isMemberPolicy(c.policy)}));
  r.get('/session',async(req,res)=>{const s=await session(req);res.json({account:s?{name:s.display_name}:null,enabled:c.enabled});});
  // Standard provider webhook is outside browser CSRF, authenticated by signed JWT.
  r.post('/backchannel',express.urlencoded({extended:false,limit:'8kb'}),async(req,res)=>{
@@ -104,7 +105,7 @@ export function createIdentityRouter(db,c,provider){
    const callback=new URL(c.origin+'/api/identity/callback');callback.search=new URL(req.originalUrl,c.origin).search;
    const claims=assertAssurance(await provider.exchange(callback,{...tx,state}),c.policy);
    const token=random();
-   const deadline=c.policy.kind==='auth0-member-v1'?Math.min(Date.now()+c.absoluteMs,claims.auth_time*1000+c.absoluteMs):Date.now()+c.absoluteMs;
+   const deadline=isMemberPolicy(c.policy)?Math.min(Date.now()+c.absoluteMs,claims.auth_time*1000+c.absoluteMs):Date.now()+c.absoluteMs;
    await db.transaction(async q=>{
     let account=(await q.query('SELECT * FROM lw_accounts WHERE issuer=$1 AND subject=$2 FOR UPDATE',[claims.iss,claims.sub])).rows[0];
     // Match only within the authenticated identity. Never look up or reveal an
@@ -143,7 +144,7 @@ export function createIdentityRouter(db,c,provider){
   const sessions=(await db.query('SELECT client,created_at,expires_at,hash FROM lw_sessions WHERE account_id=$1 AND version=$2 AND expires_at>now() AND last_active>now()-($3*interval \'1 millisecond\') AND auth_time>now()-($4*interval \'1 millisecond\') ORDER BY created_at DESC',[id,req.identity.security_version,c.idleMs,c.absoluteMs])).rows.map(({hash,...s})=>({...s,current:hash===req.identity.hash}));
   const access=(await db.query('SELECT product,valid_until FROM lw_entitlements WHERE account_id=$1 AND valid_until>now()',[id])).rows;
   const alerts=(await db.query('SELECT id,kind,created_at FROM lw_security_alerts WHERE account_id=$1 AND acknowledged_at IS NULL ORDER BY created_at DESC LIMIT 10',[id])).rows;
-  res.json({name:req.identity.display_name,sessions,access,alerts,securityManagement:false,recovery:c.policy?.kind==='auth0-member-v1',billing:false});
+  res.json({name:req.identity.display_name,sessions,access,alerts,securityManagement:false,recovery:isMemberPolicy(c.policy),billing:false});
  });
  r.patch('/account',auth,fresh,central,async(req,res)=>{
   const {name}=z.object({name:z.string().trim().min(1).max(80)}).strict().parse(req.body);

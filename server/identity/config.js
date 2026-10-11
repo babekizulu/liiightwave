@@ -16,7 +16,15 @@ const memberPolicy=z.object({
  actionRevision:z.literal('2026-10-11.1'),reviewReference:z.string().min(1),
  revocation:z.literal('password-event-and-authentication-deadline'),
 }).strict();
-export const policySchema=z.union([memberPolicy,strictPolicy]);
+const cognitoStagingPolicy=z.object({
+ kind:z.literal('cognito-member-staging-v1'),issuer:z.url(),clientId:z.string().min(1),
+ signingAlgorithm:z.literal('RS256'),subjectMode:z.literal('public'),
+ userPoolId:z.string().regex(/^af-south-1_[A-Za-z0-9]+$/),
+ loginOrigin:z.literal('https://lw-staging-130165494614.auth.af-south-1.amazoncognito.com'),
+ reviewReference:z.string().min(1),revocation:z.literal('authentication-deadline-only'),
+}).strict().refine(p=>p.issuer===`https://cognito-idp.af-south-1.amazonaws.com/${p.userPoolId}`,'Issuer must identify the reviewed Cape Town pool.');
+export const policySchema=z.union([memberPolicy,cognitoStagingPolicy,strictPolicy]);
+export const isMemberPolicy=policy=>['auth0-member-v1','cognito-member-staging-v1'].includes(policy?.kind);
 export function loadConfig(env=process.env){
  const production=env.NODE_ENV==='production';
  if(env.MOCK_AUTH || env.TEST_AUTH) throw new Error('Runtime authentication fixtures are forbidden.');
@@ -36,8 +44,9 @@ export function loadConfig(env=process.env){
    if(new URL(policy.issuer).protocol!=='https:') throw new Error('OIDC issuer must use HTTPS');
    if(Buffer.from(env.IDENTITY_DATA_KEY,'base64').length!==32) throw new Error('IDENTITY_DATA_KEY must encode 32 random bytes');
    if(policy.kind==='auth0-member-v1' && Buffer.from(env.AUTH0_PASSWORD_EVENT_SECRET||'','base64').length!==32)throw new Error('Password events require a dedicated 32-byte shared secret.');
+   if(policy.kind==='cognito-member-staging-v1' && origin!==`https://${appId==='liiightwave'?'liiightwave':'cretans'}-probe-staging.up.railway.app`)throw new Error('Cognito migration policy is restricted to the dedicated staging origins.');
  }
  return {appId,origin,production,enabled,policy,secret:env.OIDC_CLIENT_SECRET,dataKey:env.IDENTITY_DATA_KEY,
   eventSecret:env.AUTH0_PASSWORD_EVENT_SECRET,
-  cookie:production?`__Host-lw-${appId}`:`lw-${appId}`,idleMs:policy?.kind==='auth0-member-v1'?1800000:3600000,absoluteMs:policy?.kind==='auth0-member-v1'?3600000:43200000,freshMs:300000};
+  cookie:production?`__Host-lw-${appId}`:`lw-${appId}`,idleMs:isMemberPolicy(policy)?1800000:3600000,absoluteMs:isMemberPolicy(policy)?3600000:43200000,freshMs:300000};
 }

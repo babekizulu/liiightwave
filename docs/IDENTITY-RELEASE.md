@@ -1,6 +1,6 @@
 # Release and operating gates
 
-**Current plan · 10 October revision:** The owner chose to retain Auth0 and revise member assurance. [AUTH0-SECURITY-PLAN.md](AUTH0-SECURITY-PLAN.md) now defines passkey-preferred sign-in, password fallback, provider email recovery and bounded session exposure. Earlier required-UV/two-proof gates are historical for ordinary members. This is a plan revision, not production acceptance; runtime identity remains disabled and staging compute remains stopped.
+**Current plan · 11 October revision:** The owner selected Amazon Cognito in Cape Town. [COGNITO-MIGRATION.md](COGNITO-MIGRATION.md) records the staged migration, current verification and remaining cutover work. Auth0 member staging previously passed password recovery and both-app revocation tests and is retained during migration. Older inventory and blocker entries below are historical; this revision does not enable production identity.
 
 ## Environment/domain matrix
 
