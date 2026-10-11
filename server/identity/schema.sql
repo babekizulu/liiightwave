@@ -55,4 +55,10 @@ CREATE TABLE IF NOT EXISTS lw_security_alerts (
  kind text NOT NULL CHECK(kind='password_changed'), created_at timestamptz NOT NULL DEFAULT now(),
  acknowledged_at timestamptz
 );
+CREATE TABLE IF NOT EXISTS lw_email_outbox (
+ id uuid PRIMARY KEY REFERENCES lw_security_alerts ON DELETE CASCADE,
+ sealed_recipient text, created_at timestamptz NOT NULL DEFAULT now(),
+ attempts integer NOT NULL DEFAULT 0, next_attempt timestamptz NOT NULL DEFAULT now(),
+ lease_until timestamptz, accepted_at timestamptz, failed_at timestamptz
+);
 COMMIT;

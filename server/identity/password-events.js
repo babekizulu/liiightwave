@@ -1,7 +1,7 @@
 import {createHmac,timingSafeEqual} from 'node:crypto';
 import {z} from 'zod';
 
-const eventSchema=z.object({id:z.uuid(),issuer:z.url(),subject:z.string().min(1).max(255),occurredAt:z.number().int().positive(),connectionId:z.string().min(1)}).strict();
+const eventSchema=z.object({id:z.uuid(),issuer:z.url(),subject:z.string().min(1).max(255),occurredAt:z.number().int().positive(),connectionId:z.string().min(1),verifiedEmail:z.email().max(254).optional()}).strict();
 // Authenticate the exact wire bytes before parsing. A timestamp limits capture
 // replay; the database event key deduplicates concurrent deliveries and retries.
 export function verifyPasswordEvent(body,signature,secret,policy,now=Date.now()){

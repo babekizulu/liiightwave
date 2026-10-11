@@ -12,4 +12,12 @@ The `/talisman` entry accepts a bounded PNG, drag/drop or camera snapshot, decod
 
 The current issuer/RP ID is `auth-staging.liiightwave.com`; changing it affects passkeys and requires an explicit enrollment migration decision. Do not silently move to `auth.liiightwave.com`.
 
-Deployment status and acceptance evidence will be recorded here when the test window completes.
+## Staging evidence · 11 October
+
+The public Cretans product link is deployed. Both actual HTTPS staging applications now accept the same verified Auth0 account. The owner completed email verification and fresh sign-in, and generated a Talisman on the profile page. Resend reports the verification message delivered from the verified liiightwave.com sender. These results do not constitute production authentication acceptance.
+
+The password-change receiver now durably queues an encrypted verified recipient with the revocation transaction. A dedicated sending-only Resend key, restricted to liiightwave.com, is held by the separate identity service. Its worker uses a stable idempotency key, bounded retries and a 23-hour cutoff; accepted or exhausted messages discard their encrypted recipient. Acceptance by Resend is not proof of delivery. Real recovery and security-alert delivery remain pending.
+
+The profile page clears private data on session revocation and ignores delayed Talisman results. Local validation: ten core account tests, four core browser tests, 63 mirrored Cretans API/protocol tests, both builds, Cretans lint/typecheck and dependency audit passed. The production Talisman image upload through the Chrome tool remains unverified because the tool reports file access disabled despite the owner's enabled setting; local renderer/decoder tests passed.
+
+Production identity remains disabled. Remaining operational acceptance includes real recovery, both-app logout/revocation, database privilege and backup/restore checks, monitoring and final production configuration. Keep the current Auth0 issuer stable. No legacy accounts are migrated or linked by email.

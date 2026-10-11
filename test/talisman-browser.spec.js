@@ -23,3 +23,19 @@ test('mobile Talisman access fits the viewport and camera failure has a file fal
  await page.getByRole('button',{name:'Scan with camera'}).click();await expect(page.getByRole('status')).toContainText('Camera unavailable');await expect(page.getByLabel('Choose your Talisman PNG')).toBeVisible();
  await page.getByRole('button',{name:'Sign in',exact:true}).click();await expect(page.getByRole('status')).toHaveCount(0);
 });
+
+test('revoked sessions clear private profile and ignore a delayed Talisman download',async({page})=>{
+ let release;const responseReady=new Promise(resolve=>{release=resolve;});
+ const payload={type:'liiightwave-talisman',v:1,ref:randomBytes(32).toString('base64url'),art:{v:1,seed:randomBytes(32).toString('base64url')}};
+ await page.route('**/api/identity/account',route=>route.fulfill({json:{name:'Private fixture',sessions:[],alerts:[]}}));
+ await page.route('**/api/identity/session',route=>route.fulfill({json:{account:null,enabled:true}}));
+ await page.route('**/api/identity/talisman',async route=>{await responseReady;await route.fulfill({json:{payload}});});
+ let downloads=0;page.on('download',()=>downloads++);
+ await page.goto('/sso');await expect(page.getByLabel('Your name')).toHaveValue('Private fixture');
+ await page.getByRole('button',{name:'Download my PNG'}).click();
+ await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+ await expect(page.getByRole('heading',{name:'Welcome to the wave'})).toBeVisible();
+ release();await expect(page.getByRole('button',{name:/Continue with LiiiGHTWAVE/})).not.toHaveText(/Opening/);
+ await expect(page.getByAltText('Your personal Talisman')).toHaveCount(0);expect(downloads).toBe(0);
+ expect(await page.evaluate(()=>Object.values(localStorage).join(''))).not.toContain('Private fixture');
+});

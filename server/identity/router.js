@@ -40,7 +40,11 @@ export function createIdentityRouter(db,c,provider){
    const saved=await q.query("INSERT INTO lw_events(issuer,jti,expires_at) VALUES($1,$2,now()+interval '1 day') ON CONFLICT DO NOTHING RETURNING jti",[event.issuer,event.id]);
    if(!saved.rows.length)return;
    const account=(await q.query('UPDATE lw_accounts SET security_version=security_version+1,revoked_after=now() WHERE issuer=$1 AND subject=$2 RETURNING id',[event.issuer,event.subject])).rows[0];
-   if(account)await q.query("INSERT INTO lw_security_alerts(id,account_id,kind) VALUES($1,$2,'password_changed')",[randomUUID(),account.id]);
+   if(account){
+    const alertId=randomUUID();
+    await q.query("INSERT INTO lw_security_alerts(id,account_id,kind) VALUES($1,$2,'password_changed')",[alertId,account.id]);
+    if(event.verifiedEmail)await q.query('INSERT INTO lw_email_outbox(id,sealed_recipient) VALUES($1,$2)',[alertId,seal(event.verifiedEmail,c.dataKey)]);
+   }
   });
   res.sendStatus(204);
  });

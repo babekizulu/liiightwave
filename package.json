@@ -14,7 +14,8 @@
     "start": "node --env-file-if-exists=.env server/index.js",
     "migrate": "node --env-file-if-exists=.env server/migrate.js",
     "test": "node --test --test-concurrency=1 test/*.test.js",
-    "migrate:identity": "node --env-file-if-exists=.env server/migrate-identity.js"
+    "migrate:identity": "node --env-file-if-exists=.env server/migrate-identity.js",
+    "test:browser": "playwright test"
   },
   "dependencies": {
     "@fontsource/cormorant-garamond": "^5.3.0",
