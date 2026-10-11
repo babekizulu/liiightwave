@@ -10,3 +10,5 @@ coverage/
 .DS_Store
 
 provider-policy.json
+test-results/
+playwright-report/

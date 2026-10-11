@@ -4,5 +4,6 @@ dist
 .env
 .env.*
 test
-src
-public
+test-results
+playwright-report
+provider-policy.json

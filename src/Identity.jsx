@@ -34,7 +34,8 @@ export default function Identity(){
  }
  function chooseMode(value){requestId.current++;stopCamera();setMode(value);setPayload(undefined);setBusy(false);setMessage('');}
  async function startCamera(){
-  setMessage('');try{if(!navigator.mediaDevices?.getUserMedia)throw Error();const media=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280}},audio:false});if(!alive.current){media.getTracks().forEach(t=>t.stop());return;}stream.current=media;setCamera(true);}catch{setMessage('Camera unavailable. Allow camera access or choose your Talisman PNG.');}
+  const id=++requestId.current;setMessage('');setBusy(true);
+  try{if(!navigator.mediaDevices?.getUserMedia)throw Error();const media=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280}},audio:false});if(!alive.current||id!==requestId.current){media.getTracks().forEach(t=>t.stop());return;}stream.current=media;setCamera(true);}catch{if(alive.current&&id===requestId.current)setMessage('Camera unavailable. Allow camera access or choose your Talisman PNG.');}finally{if(alive.current&&id===requestId.current)setBusy(false);}
  }
  async function capture(){
   const v=video.current;if(!v?.videoWidth)return;

@@ -1,0 +1,2 @@
+import {defineConfig} from '@playwright/test';
+export default defineConfig({testDir:'test',testMatch:/browser\.spec\.js$/,use:{baseURL:'http://127.0.0.1:5175',channel:'chrome'},webServer:[{command:'node test/browser-server.js',url:'http://127.0.0.1:3001/api/health',reuseExistingServer:false},{command:'node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 5175 --configLoader native',url:'http://127.0.0.1:5175',reuseExistingServer:false}],reporter:'list'});
