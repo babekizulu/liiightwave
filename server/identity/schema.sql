@@ -45,6 +45,10 @@ CREATE TABLE IF NOT EXISTS lw_entitlements (
 );
 CREATE TABLE IF NOT EXISTS lw_rate_limits (key text PRIMARY KEY, count integer NOT NULL, expires_at timestamptz NOT NULL);
 CREATE TABLE IF NOT EXISTS lw_events (issuer text NOT NULL, jti text NOT NULL, expires_at timestamptz NOT NULL, PRIMARY KEY(issuer,jti));
+CREATE TABLE IF NOT EXISTS lw_identity_revocations (
+ issuer text NOT NULL, subject text NOT NULL, revoked_after timestamptz NOT NULL,
+ PRIMARY KEY(issuer,subject)
+);
 CREATE TABLE IF NOT EXISTS lw_privacy_requests (
  id uuid PRIMARY KEY, account_id uuid NOT NULL REFERENCES lw_accounts ON DELETE CASCADE,
  kind text NOT NULL CHECK(kind='delete'), created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(account_id,kind)
@@ -54,6 +58,15 @@ CREATE TABLE IF NOT EXISTS lw_security_alerts (
  id uuid PRIMARY KEY, account_id uuid NOT NULL REFERENCES lw_accounts ON DELETE CASCADE,
  kind text NOT NULL CHECK(kind='password_changed'), created_at timestamptz NOT NULL DEFAULT now(),
  acknowledged_at timestamptz
+);
+ALTER TABLE lw_transactions ADD COLUMN IF NOT EXISTS migration_purpose text CHECK(migration_purpose IN ('source','target'));
+ALTER TABLE lw_transactions ADD COLUMN IF NOT EXISTS migration_proof jsonb;
+CREATE TABLE IF NOT EXISTS lw_identity_transfers (
+ id uuid PRIMARY KEY, account_id uuid NOT NULL REFERENCES lw_accounts ON DELETE CASCADE,
+ source_issuer text NOT NULL, source_subject text NOT NULL,
+ target_issuer text NOT NULL, target_subject text NOT NULL,
+ source_auth_time timestamptz NOT NULL, target_auth_time timestamptz NOT NULL,
+ created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE TABLE IF NOT EXISTS lw_email_outbox (
  id uuid PRIMARY KEY REFERENCES lw_security_alerts ON DELETE CASCADE,

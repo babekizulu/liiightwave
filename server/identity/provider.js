@@ -17,6 +17,7 @@ export function assertAssurance(claims,policy,now=Date.now()){
 }
 export async function createProvider(config,fetchImpl=globalThis.fetch){
  const transport=await createOidcTransport(config,fetchImpl);
+ const source=config.migrationSourcePolicy?await createProvider({...config,policy:config.migrationSourcePolicy,secret:config.migrationSourceSecret,migrationSourcePolicy:undefined,migrationSourceSecret:undefined},fetchImpl):undefined;
  return {
   authorize:transport.authorize,
   async exchange(url,tx){
@@ -24,5 +25,6 @@ export async function createProvider(config,fetchImpl=globalThis.fetch){
   },
   verifyLogout:transport.verifyLogout,
   logoutUrl:transport.logoutUrl,
+  source,
  };
 }

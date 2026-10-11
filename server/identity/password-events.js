@@ -9,6 +9,7 @@ export function verifyPasswordEvent(body,signature,secret,policy,now=Date.now())
  const expected=createHmac('sha256',Buffer.from(secret,'base64')).update(body).digest();
  if(!timingSafeEqual(expected,Buffer.from(signature,'hex')))throw Error('Invalid event');
  const event=eventSchema.parse(JSON.parse(body.toString('utf8')));
- if(event.issuer!==policy.issuer||event.connectionId!==policy.connectionId||event.occurredAt>now+30000||event.occurredAt<now-300000)throw Error('Invalid event');
+ const connection=policy.kind==='cognito-member-staging-v1'?policy.userPoolId:policy.connectionId;
+ if(event.issuer!==policy.issuer||event.connectionId!==connection||event.occurredAt>now+30000||event.occurredAt<now-300000)throw Error('Invalid event');
  return event;
 }

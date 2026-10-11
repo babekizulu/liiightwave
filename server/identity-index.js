@@ -14,7 +14,7 @@ const config=loadConfig({...process.env,IDENTITY_APP_ID:'liiightwave'});
 const db=connectDatabase(process.env.IDENTITY_DATABASE_URL);
 // Migrations run separately with operator credentials. The web process only
 // verifies the schema and can run with a role that cannot create or alter it.
-await db.query('SELECT id,suspended_at FROM lw_accounts LIMIT 0; SELECT id,sealed_recipient,accepted_at FROM lw_email_outbox LIMIT 0;');
+await db.query('SELECT id,suspended_at FROM lw_accounts LIMIT 0; SELECT id,sealed_recipient,accepted_at FROM lw_email_outbox LIMIT 0; SELECT migration_purpose,migration_proof FROM lw_transactions LIMIT 0; SELECT id FROM lw_identity_transfers LIMIT 0; SELECT issuer FROM lw_identity_revocations LIMIT 0;');
 const provider=config.enabled?await createProvider(config):null;
 const app=express();app.disable('x-powered-by');app.set('trust proxy',false);app.use(helmet());
 app.get('/api/health',async(_req,res)=>{try{await db.query('SELECT 1');res.set('Cache-Control','no-store').json({status:'ok',identity:config.enabled});}catch{res.status(503).json({status:'unavailable'});}});
@@ -24,5 +24,5 @@ const dist=fileURLToPath(new URL('../dist/',import.meta.url));
 app.use(express.static(dist));app.get('/{*path}',(_req,res)=>res.sendFile(dist+'index.html'));
 const server=app.listen(Number(process.env.PORT||3001),'0.0.0.0',()=>console.log('LiiiGHTWAVE identity service ready.'));
 const stopEmails=startSecurityEmailWorker(db,{dataKey:config.dataKey,apiKey:process.env.RESEND_SECURITY_API_KEY});
-const cleanup=setInterval(()=>db.query("DELETE FROM lw_transactions WHERE expires_at<now(); DELETE FROM lw_onboarding WHERE expires_at<now(); DELETE FROM lw_sessions WHERE expires_at<now() OR last_active<now()-interval '1 hour'; DELETE FROM lw_rate_limits WHERE expires_at<now(); DELETE FROM lw_events WHERE expires_at<now();").catch(()=>console.error('identity_cleanup_failed')),60000);cleanup.unref();
+const cleanup=setInterval(()=>db.query("DELETE FROM lw_transactions WHERE expires_at<now(); DELETE FROM lw_onboarding WHERE expires_at<now(); DELETE FROM lw_sessions WHERE expires_at<now() OR last_active<now()-interval '1 hour'; DELETE FROM lw_rate_limits WHERE expires_at<now(); DELETE FROM lw_events WHERE expires_at<now(); DELETE FROM lw_identity_revocations WHERE revoked_after<now()-interval '2 days';").catch(()=>console.error('identity_cleanup_failed')),60000);cleanup.unref();
 for(const signal of ['SIGTERM','SIGINT'])process.on(signal,()=>{stopEmails();clearInterval(cleanup);server.close(async()=>{await db.close();process.exit(0);});setTimeout(()=>process.exit(1),10000).unref();});

@@ -21,7 +21,7 @@ const cognitoStagingPolicy=z.object({
  signingAlgorithm:z.literal('RS256'),subjectMode:z.literal('public'),
  userPoolId:z.string().regex(/^af-south-1_[A-Za-z0-9]+$/),
  loginOrigin:z.literal('https://lw-staging-130165494614.auth.af-south-1.amazoncognito.com'),
- reviewReference:z.string().min(1),revocation:z.literal('authentication-deadline-only'),
+ reviewReference:z.string().min(1),revocation:z.enum(['authentication-deadline-only','password-event-and-authentication-deadline']),
 }).strict().refine(p=>p.issuer===`https://cognito-idp.af-south-1.amazonaws.com/${p.userPoolId}`,'Issuer must identify the reviewed Cape Town pool.');
 export const policySchema=z.union([memberPolicy,cognitoStagingPolicy,strictPolicy]);
 export const isMemberPolicy=policy=>['auth0-member-v1','cognito-member-staging-v1'].includes(policy?.kind);
@@ -36,7 +36,7 @@ export function loadConfig(env=process.env){
  if(!production && parsed.protocol!=='https:' && !['localhost','127.0.0.1'].includes(parsed.hostname)) throw new Error('HTTP is limited to loopback development.');
  const enabled=env.IDENTITY_ENABLED==='true';
  if(production && !env.DATABASE_URL) throw new Error('DATABASE_URL required in production');
- let policy;
+ let policy,migrationSourcePolicy;
  if(enabled){
    if(!(env.OIDC_POLICY_FILE || env.OIDC_POLICY_JSON) || !env.OIDC_CLIENT_SECRET || !env.IDENTITY_DATA_KEY) throw new Error('Identity needs a reviewed policy, client secret, and data key.');
    if(env.OIDC_POLICY_FILE && env.OIDC_POLICY_JSON)throw new Error('Choose one policy configuration source.');
@@ -45,8 +45,17 @@ export function loadConfig(env=process.env){
    if(Buffer.from(env.IDENTITY_DATA_KEY,'base64').length!==32) throw new Error('IDENTITY_DATA_KEY must encode 32 random bytes');
    if(policy.kind==='auth0-member-v1' && Buffer.from(env.AUTH0_PASSWORD_EVENT_SECRET||'','base64').length!==32)throw new Error('Password events require a dedicated 32-byte shared secret.');
    if(policy.kind==='cognito-member-staging-v1' && origin!==`https://${appId==='liiightwave'?'liiightwave':'cretans'}-probe-staging.up.railway.app`)throw new Error('Cognito migration policy is restricted to the dedicated staging origins.');
+   if(policy.kind==='cognito-member-staging-v1' && policy.revocation==='password-event-and-authentication-deadline' && Buffer.from(env.COGNITO_PASSWORD_EVENT_SECRET||'','base64').length!==32)throw new Error('Cognito password events require a dedicated 32-byte shared secret.');
+   if(env.IDENTITY_MIGRATION_ENABLED==='true'){
+    if(appId!=='liiightwave'||policy.kind!=='cognito-member-staging-v1'||!env.MIGRATION_SOURCE_CLIENT_SECRET)throw new Error('Identity transfer is limited to the central Cognito staging app.');
+    migrationSourcePolicy=memberPolicy.parse(JSON.parse(env.MIGRATION_SOURCE_POLICY_JSON||'null'));
+    if(Buffer.from(env.AUTH0_PASSWORD_EVENT_SECRET||'','base64').length!==32)throw new Error('Source recovery notifications must stay enabled during transfer.');
+    if(migrationSourcePolicy.issuer!=='https://auth-staging.liiightwave.com/'||migrationSourcePolicy.clientId!=='tPLFuZDNhiNHzTXUfJIJj4D8XJfzqYJR'||migrationSourcePolicy.connectionId!=='con_yArftYWRRZ9e9xQ9')throw new Error('Unexpected migration source.');
+   }
  }
  return {appId,origin,production,enabled,policy,secret:env.OIDC_CLIENT_SECRET,dataKey:env.IDENTITY_DATA_KEY,
-  eventSecret:env.AUTH0_PASSWORD_EVENT_SECRET,
+  eventSecret:policy?.kind==='cognito-member-staging-v1'?env.COGNITO_PASSWORD_EVENT_SECRET:env.AUTH0_PASSWORD_EVENT_SECRET,
+  migrationSourcePolicy,migrationSourceSecret:migrationSourcePolicy?env.MIGRATION_SOURCE_CLIENT_SECRET:undefined,
+  migrationSourceEventSecret:migrationSourcePolicy?env.AUTH0_PASSWORD_EVENT_SECRET:undefined,
   cookie:production?`__Host-lw-${appId}`:`lw-${appId}`,idleMs:isMemberPolicy(policy)?1800000:3600000,absoluteMs:isMemberPolicy(policy)?3600000:43200000,freshMs:300000};
 }

@@ -8,6 +8,8 @@ import {assertAssurance} from './provider.js';
 import {lookupSession} from './session.js';
 import {verifyPasswordEvent} from './password-events.js';
 import {isMemberPolicy} from './config.js';
+import {migrationTransaction,proveMigrationSource,completeMigration} from './migration.js';
+import {assertIdentityCurrent} from './revocation.js';
 
 const onboarding=z.object({name:z.string().trim().min(1).max(80),interests:z.string().trim().max(500),path:z.enum(['scholar','explorer','mixed'])}).strict();
 const note=z.object({title:z.string().trim().min(1).max(120),body:z.string().trim().min(1).max(10000)}).strict();
@@ -19,7 +21,7 @@ export function createIdentityRouter(db,c,provider){
  const txCookie=c.cookie+'-transaction',onCookie=c.cookie+'-onboarding';
  r.use((_req,res,next)=>{res.set({'Cache-Control':'private, no-store','CDN-Cache-Control':'no-store','Netlify-CDN-Cache-Control':'no-store','Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff','X-Frame-Options':'DENY'});next();});
  r.use(cookieParser());
- r.get('/status',(_req,res)=>res.json({enabled:c.enabled,app:c.appId,billing:false,recovery:c.enabled&&isMemberPolicy(c.policy)}));
+ r.get('/status',(_req,res)=>res.json({enabled:c.enabled,app:c.appId,billing:false,recovery:c.enabled&&isMemberPolicy(c.policy),migration:Boolean(c.enabled&&c.migrationSourcePolicy)}));
  r.get('/session',async(req,res)=>{const s=await session(req);res.json({account:s?{name:s.display_name}:null,enabled:c.enabled});});
  // Standard provider webhook is outside browser CSRF, authenticated by signed JWT.
  r.post('/backchannel',express.urlencoded({extended:false,limit:'8kb'}),async(req,res)=>{
@@ -34,12 +36,15 @@ export function createIdentityRouter(db,c,provider){
   }catch{fail(res,400,'Logout event rejected.');}
  });
  r.post('/password-changed',express.raw({type:'application/json',limit:'4kb'}),async(req,res)=>{
-  if(!c.enabled||c.policy?.kind!=='auth0-member-v1'||!db)return fail(res,503,'Identity is not configured.');
+  if(!c.enabled||!isMemberPolicy(c.policy)||!c.eventSecret||!db)return fail(res,503,'Identity is not configured.');
   let event;
-  try{event=verifyPasswordEvent(req.body,req.get('X-LiiiGHTWAVE-Signature'),c.eventSecret,c.policy);}catch{return fail(res,400,'Event rejected.');}
+  try{event=verifyPasswordEvent(req.body,req.get('X-LiiiGHTWAVE-Signature'),c.eventSecret,c.policy);}catch{
+   try{if(!c.migrationSourcePolicy)throw Error('No migration source');event=verifyPasswordEvent(req.body,req.get('X-LiiiGHTWAVE-Signature'),c.migrationSourceEventSecret,c.migrationSourcePolicy);}catch{return fail(res,400,'Event rejected.');}
+  }
   await db.transaction(async q=>{
    const saved=await q.query("INSERT INTO lw_events(issuer,jti,expires_at) VALUES($1,$2,now()+interval '1 day') ON CONFLICT DO NOTHING RETURNING jti",[event.issuer,event.id]);
    if(!saved.rows.length)return;
+   await q.query('INSERT INTO lw_identity_revocations(issuer,subject,revoked_after) VALUES($1,$2,now()) ON CONFLICT(issuer,subject) DO UPDATE SET revoked_after=now()',[event.issuer,event.subject]);
    const account=(await q.query('UPDATE lw_accounts SET security_version=security_version+1,revoked_after=now() WHERE issuer=$1 AND subject=$2 RETURNING id',[event.issuer,event.subject])).rows[0];
    if(account){
     const alertId=randomUUID();
@@ -84,6 +89,13 @@ export function createIdentityRouter(db,c,provider){
   await db.transaction(async q=>{if(req.cookies[onCookie])await q.query('DELETE FROM lw_onboarding WHERE hash=$1',[digest(req.cookies[onCookie])]);await q.query('INSERT INTO lw_onboarding(hash,name,path,interests,expires_at) VALUES($1,$2,$3,$4,now()+interval \'20 minutes\')',[digest(token),input.name,input.path,input.interests]);});
   res.cookie(onCookie,token,{...co,maxAge:1200000}).json({prepared:true});
  });
+ r.post('/migration',ready,central,limit,async(req,res)=>{
+  z.object({}).strict().parse(req.body);
+  if(!c.migrationSourcePolicy||!provider.source)return fail(res,503,'Account transfer is unavailable.');
+  if(req.cookies[txCookie])await db.query('DELETE FROM lw_transactions WHERE browser_hash=$1 AND client=$2',[digest(req.cookies[txCookie]),c.appId]);
+  const browser=random(),tx=await migrationTransaction(db,c,browser,'source');
+  res.cookie(txCookie,browser,{...co,maxAge:300000}).json({url:await provider.source.authorize(tx)});
+ });
  r.post('/login',ready,limit,async(req,res)=>{
   const input=z.object({talisman:z.string().max(512).optional(),fresh:z.boolean().optional(),signup:z.boolean().optional()}).strict().parse(req.body);
   const talisman=input.talisman?parseTalisman(input.talisman):null;
@@ -103,11 +115,17 @@ export function createIdentityRouter(db,c,provider){
   if(!tx)return fail(res,400,'Sign-in expired or already used.');
   try{
    const callback=new URL(c.origin+'/api/identity/callback');callback.search=new URL(req.originalUrl,c.origin).search;
+   if(tx.migration_purpose==='source'){
+    const proof=await proveMigrationSource(db,c,provider,callback,{...tx,state});
+    const nextBrowser=random(),next=await migrationTransaction(db,c,nextBrowser,'target',proof);
+    return res.cookie(txCookie,nextBrowser,{...co,maxAge:300000}).redirect(303,await provider.authorize({...next,signup:true}));
+   }
    const claims=assertAssurance(await provider.exchange(callback,{...tx,state}),c.policy);
    const token=random();
    const deadline=isMemberPolicy(c.policy)?Math.min(Date.now()+c.absoluteMs,claims.auth_time*1000+c.absoluteMs):Date.now()+c.absoluteMs;
    await db.transaction(async q=>{
-    let account=(await q.query('SELECT * FROM lw_accounts WHERE issuer=$1 AND subject=$2 FOR UPDATE',[claims.iss,claims.sub])).rows[0];
+    await assertIdentityCurrent(q,claims.iss,claims.sub,claims.auth_time);
+    let account=tx.migration_purpose==='target'?await completeMigration(q,c,tx,claims):(await q.query('SELECT * FROM lw_accounts WHERE issuer=$1 AND subject=$2 FOR UPDATE',[claims.iss,claims.sub])).rows[0];
     // Match only within the authenticated identity. Never look up or reveal an
     // account by a public artifact. Mismatch never changes either account.
     if(tx.talisman_hash){
