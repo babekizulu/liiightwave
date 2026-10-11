@@ -49,4 +49,10 @@ CREATE TABLE IF NOT EXISTS lw_privacy_requests (
  id uuid PRIMARY KEY, account_id uuid NOT NULL REFERENCES lw_accounts ON DELETE CASCADE,
  kind text NOT NULL CHECK(kind='delete'), created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(account_id,kind)
 );
+ALTER TABLE lw_accounts ADD COLUMN IF NOT EXISTS suspended_at timestamptz;
+CREATE TABLE IF NOT EXISTS lw_security_alerts (
+ id uuid PRIMARY KEY, account_id uuid NOT NULL REFERENCES lw_accounts ON DELETE CASCADE,
+ kind text NOT NULL CHECK(kind='password_changed'), created_at timestamptz NOT NULL DEFAULT now(),
+ acknowledged_at timestamptz
+);
 COMMIT;

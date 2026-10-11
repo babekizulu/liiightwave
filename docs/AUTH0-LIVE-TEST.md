@@ -1,6 +1,8 @@
 # Real Auth0 integration test · 9 October 2026
 
-**10 October decision:** Auth0 hosted Universal Login is not approved for the required policy. Support reports required-UV and recovery/enrollment incompatibilities; these are vendor statements, not reproduced results. Temporary HTTPS compute is stopped and the previous device-verification handoff is superseded. See [AUTH0-ACCEPTANCE-DECISION.md](AUTH0-ACCEPTANCE-DECISION.md).
+**Current plan · 10 October revision:** The owner chose to retain Auth0 and revise member assurance. [AUTH0-SECURITY-PLAN.md](AUTH0-SECURITY-PLAN.md) now defines passkey-preferred sign-in, password fallback, provider email recovery and bounded session exposure. Earlier required-UV/two-proof gates are historical for ordinary members. This is a plan revision, not production acceptance; runtime identity remains disabled and staging compute remains stopped.
+
+**Historical evidence:** Results and configuration below describe the earlier strict-policy diagnostic. They are preserved without converting vendor statements or old tests into acceptance of the revised plan.
 
 
 The two development clients now have a runnable local real-provider diagnostic. It uses the **same OIDC protocol transport as the applications**. It does not grant application accounts, application sessions, notes/progress access or entitlements. Required-UV and provider revocation remain release gates.

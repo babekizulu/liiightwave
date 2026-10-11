@@ -5,6 +5,8 @@ import {z} from 'zod';
 import {digest,random,seal,unseal} from './crypto.js';
 import {parseTalisman,newTalisman} from './talisman.js';
 import {assertAssurance} from './provider.js';
+import {lookupSession} from './session.js';
+import {verifyPasswordEvent} from './password-events.js';
 
 const onboarding=z.object({name:z.string().trim().min(1).max(80),interests:z.string().trim().max(500),path:z.enum(['scholar','explorer','mixed'])}).strict();
 const note=z.object({title:z.string().trim().min(1).max(120),body:z.string().trim().min(1).max(10000)}).strict();
@@ -16,7 +18,7 @@ export function createIdentityRouter(db,c,provider){
  const txCookie=c.cookie+'-transaction',onCookie=c.cookie+'-onboarding';
  r.use((_req,res,next)=>{res.set({'Cache-Control':'private, no-store','CDN-Cache-Control':'no-store','Netlify-CDN-Cache-Control':'no-store','Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff','X-Frame-Options':'DENY'});next();});
  r.use(cookieParser());
- r.get('/status',(_req,res)=>res.json({enabled:c.enabled,app:c.appId,billing:false,email:false,recovery:false}));
+ r.get('/status',(_req,res)=>res.json({enabled:c.enabled,app:c.appId,billing:false,recovery:c.enabled&&c.policy?.kind==='auth0-member-v1'}));
  r.get('/session',async(req,res)=>{const s=await session(req);res.json({account:s?{name:s.display_name}:null,enabled:c.enabled});});
  // Standard provider webhook is outside browser CSRF, authenticated by signed JWT.
  r.post('/backchannel',express.urlencoded({extended:false,limit:'8kb'}),async(req,res)=>{
@@ -30,6 +32,18 @@ export function createIdentityRouter(db,c,provider){
    });res.sendStatus(204);
   }catch{fail(res,400,'Logout event rejected.');}
  });
+ r.post('/password-changed',express.raw({type:'application/json',limit:'4kb'}),async(req,res)=>{
+  if(!c.enabled||c.policy?.kind!=='auth0-member-v1'||!db)return fail(res,503,'Identity is not configured.');
+  let event;
+  try{event=verifyPasswordEvent(req.body,req.get('X-LiiiGHTWAVE-Signature'),c.eventSecret,c.policy);}catch{return fail(res,400,'Event rejected.');}
+  await db.transaction(async q=>{
+   const saved=await q.query("INSERT INTO lw_events(issuer,jti,expires_at) VALUES($1,$2,now()+interval '1 day') ON CONFLICT DO NOTHING RETURNING jti",[event.issuer,event.id]);
+   if(!saved.rows.length)return;
+   const account=(await q.query('UPDATE lw_accounts SET security_version=security_version+1,revoked_after=now() WHERE issuer=$1 AND subject=$2 RETURNING id',[event.issuer,event.subject])).rows[0];
+   if(account)await q.query("INSERT INTO lw_security_alerts(id,account_id,kind) VALUES($1,$2,'password_changed')",[randomUUID(),account.id]);
+  });
+  res.sendStatus(204);
+ });
  r.use(express.json({limit:'16kb'}));
  r.use((req,res,next)=>{
   if(!['GET','HEAD'].includes(req.method)){
@@ -38,12 +52,7 @@ export function createIdentityRouter(db,c,provider){
   }next();
  });
  async function session(req){
-  if(!c.enabled || !db) return null;
-  const token=req.cookies[c.cookie]; if(typeof token!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(token)) return null;
-  return (await db.query(`SELECT a.id,a.display_name,a.security_version,s.hash,s.auth_time,s.created_at,s.expires_at
-   FROM lw_sessions s JOIN lw_accounts a ON a.id=s.account_id
-   WHERE s.hash=$1 AND s.client=$2 AND s.version=a.security_version AND s.expires_at>now()
-   AND s.last_active>now()-interval '1 hour'`,[digest(token),c.appId])).rows[0]||null;
+  return lookupSession(db,c,req.cookies[c.cookie]);
  }
  async function auth(req,res,next){
   req.identity=await session(req);if(!req.identity)return fail(res,401,'Sign in with LiiiGHTWAVE to continue.');
@@ -51,7 +60,7 @@ export function createIdentityRouter(db,c,provider){
   if(!['GET','HEAD'].includes(req.method))await db.query('UPDATE lw_sessions SET last_active=now() WHERE hash=$1 AND client=$2',[req.identity.hash,c.appId]);
   next();
  }
- function fresh(req,res,next){if(Date.now()-new Date(req.identity.auth_time).getTime()>c.freshMs)return fail(res,403,'Fresh passkey authentication is required.');next();}
+ function fresh(req,res,next){if(Date.now()-new Date(req.identity.auth_time).getTime()>c.freshMs)return fail(res,403,'Sign in again to make this change.');next();}
  function central(_req,res,next){if(c.appId!=='liiightwave')return fail(res,404,'Manage this at the central LiiiGHTWAVE account.');next();}
  function ready(_req,res,next){if(!c.enabled || !db || !provider)return fail(res,503,'Passkey sign-in is awaiting provider verification. Public chapters remain available.');next();}
  async function limit(req,res,next){
@@ -71,14 +80,14 @@ export function createIdentityRouter(db,c,provider){
   res.cookie(onCookie,token,{...co,maxAge:1200000}).json({prepared:true});
  });
  r.post('/login',ready,limit,async(req,res)=>{
-  const input=z.object({talisman:z.string().max(512).optional(),fresh:z.boolean().optional()}).strict().parse(req.body);
+  const input=z.object({talisman:z.string().max(512).optional(),fresh:z.boolean().optional(),signup:z.boolean().optional()}).strict().parse(req.body);
   const talisman=input.talisman?parseTalisman(input.talisman):null;
   const tx={state:random(),verifier:random(),nonce:random(),max_age:input.fresh?0:3600},browser=random();
   await db.transaction(async q=>{
    if(req.cookies[txCookie])await q.query('DELETE FROM lw_transactions WHERE browser_hash=$1 AND client=$2',[digest(req.cookies[txCookie]),c.appId]);
    await q.query('INSERT INTO lw_transactions(state_hash,browser_hash,client,verifier,nonce,expires_at,talisman_hash,onboarding_hash,max_age) VALUES($1,$2,$3,$4,$5,now()+interval \'5 minutes\',$6,$7,$8)',[digest(tx.state),digest(browser),c.appId,tx.verifier,tx.nonce,talisman?digest(talisman.ref):null,req.cookies[onCookie]?digest(req.cookies[onCookie]):null,tx.max_age]);
   });
-  res.cookie(txCookie,browser,{...co,maxAge:300000}).json({url:await provider.authorize(tx)});
+  res.cookie(txCookie,browser,{...co,maxAge:300000}).json({url:await provider.authorize({...tx,signup:input.signup})});
  });
  r.get('/callback',ready,limit,async(req,res)=>{
   const state=req.query.state,browser=req.cookies[txCookie];
@@ -91,6 +100,7 @@ export function createIdentityRouter(db,c,provider){
    const callback=new URL(c.origin+'/api/identity/callback');callback.search=new URL(req.originalUrl,c.origin).search;
    const claims=assertAssurance(await provider.exchange(callback,{...tx,state}),c.policy);
    const token=random();
+   const deadline=c.policy.kind==='auth0-member-v1'?Math.min(Date.now()+c.absoluteMs,claims.auth_time*1000+c.absoluteMs):Date.now()+c.absoluteMs;
    await db.transaction(async q=>{
     let account=(await q.query('SELECT * FROM lw_accounts WHERE issuer=$1 AND subject=$2 FOR UPDATE',[claims.iss,claims.sub])).rows[0];
     // Match only within the authenticated identity. Never look up or reveal an
@@ -103,15 +113,16 @@ export function createIdentityRouter(db,c,provider){
      await q.query('INSERT INTO lw_accounts(id,issuer,subject) VALUES($1,$2,$3) ON CONFLICT(issuer,subject) DO NOTHING',[randomUUID(),claims.iss,claims.sub]);
      account=(await q.query('SELECT * FROM lw_accounts WHERE issuer=$1 AND subject=$2 FOR UPDATE',[claims.iss,claims.sub])).rows[0];
     }
+    if(account.suspended_at)throw new Error('Account suspended');
     if(account.revoked_after && claims.auth_time*1000<=new Date(account.revoked_after).getTime())throw new Error('Reauthentication required after revocation');
     if(req.cookies[c.cookie])await q.query('DELETE FROM lw_sessions WHERE hash=$1 AND client=$2',[digest(req.cookies[c.cookie]),c.appId]);
-    await q.query('INSERT INTO lw_sessions(hash,account_id,client,version,sid,auth_time,expires_at) VALUES($1,$2,$3,$4,$5,$6,$7)',[digest(token),account.id,c.appId,account.security_version,claims.sid||null,new Date(claims.auth_time*1000),new Date(Date.now()+c.absoluteMs)]);
+    await q.query('INSERT INTO lw_sessions(hash,account_id,client,version,sid,auth_time,expires_at) VALUES($1,$2,$3,$4,$5,$6,$7)',[digest(token),account.id,c.appId,account.security_version,claims.sid||null,new Date(claims.auth_time*1000),new Date(deadline)]);
     if(c.appId==='cretans'&&tx.onboarding_hash){
      const pending=(await q.query('DELETE FROM lw_onboarding WHERE hash=$1 AND expires_at>now() RETURNING *',[tx.onboarding_hash])).rows[0];
      if(pending)await q.query('INSERT INTO lw_personas(account_id,traveller_name,path,inspiration) VALUES($1,$2,$3,$4) ON CONFLICT(account_id) DO NOTHING',[account.id,pending.name,pending.path,'Ariadne — a mythic guide, not a historical identity']);
     }
    });
-   res.clearCookie(onCookie,co).cookie(c.cookie,token,{...co,maxAge:c.absoluteMs}).redirect(303,c.appId==='cretans'?'/journey':'/sso');
+   res.clearCookie(onCookie,co).cookie(c.cookie,token,{...co,maxAge:Math.max(0,deadline-Date.now())}).redirect(303,c.appId==='cretans'?'/journey':'/sso');
   }catch{res.redirect(303,'/entrance?error=sign-in');}
  });
  r.post('/activity',auth,async(req,res)=>{await db.query('UPDATE lw_sessions SET last_active=now() WHERE hash=$1 AND client=$2',[req.identity.hash,c.appId]);res.json({ok:true});});
@@ -120,11 +131,15 @@ export function createIdentityRouter(db,c,provider){
   await db.query('UPDATE lw_accounts SET security_version=security_version+1,revoked_after=now() WHERE id=$1',[req.identity.id]);
   res.clearCookie(c.cookie,co).json({ok:true,scope:'Participating application sessions. Provider session is separate.'});
  });
+ r.post('/provider-logout',ready,async(_req,res)=>{
+  res.json({url:provider.logoutUrl(random())});
+ });
  r.get('/account',auth,async(req,res)=>{
   const id=req.identity.id;
-  const sessions=(await db.query('SELECT client,created_at,expires_at,hash FROM lw_sessions WHERE account_id=$1 AND version=$2 AND expires_at>now() AND last_active>now()-interval \'1 hour\' ORDER BY created_at DESC',[id,req.identity.security_version])).rows.map(({hash,...s})=>({...s,current:hash===req.identity.hash}));
+  const sessions=(await db.query('SELECT client,created_at,expires_at,hash FROM lw_sessions WHERE account_id=$1 AND version=$2 AND expires_at>now() AND last_active>now()-($3*interval \'1 millisecond\') AND auth_time>now()-($4*interval \'1 millisecond\') ORDER BY created_at DESC',[id,req.identity.security_version,c.idleMs,c.absoluteMs])).rows.map(({hash,...s})=>({...s,current:hash===req.identity.hash}));
   const access=(await db.query('SELECT product,valid_until FROM lw_entitlements WHERE account_id=$1 AND valid_until>now()',[id])).rows;
-  res.json({name:req.identity.display_name,sessions,access,securityManagement:false,recovery:false,billing:false});
+  const alerts=(await db.query('SELECT id,kind,created_at FROM lw_security_alerts WHERE account_id=$1 AND acknowledged_at IS NULL ORDER BY created_at DESC LIMIT 10',[id])).rows;
+  res.json({name:req.identity.display_name,sessions,access,alerts,securityManagement:false,recovery:c.policy?.kind==='auth0-member-v1',billing:false});
  });
  r.patch('/account',auth,fresh,central,async(req,res)=>{
   const {name}=z.object({name:z.string().trim().min(1).max(80)}).strict().parse(req.body);

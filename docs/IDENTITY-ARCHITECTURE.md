@@ -1,12 +1,14 @@
 # Architecture decisions
 
+**Current plan · 10 October revision:** The owner chose to retain Auth0 and revise member assurance. [AUTH0-SECURITY-PLAN.md](AUTH0-SECURITY-PLAN.md) now defines passkey-preferred sign-in, password fallback, provider email recovery and bounded session exposure. Earlier required-UV/two-proof gates are historical for ordinary members. This is a plan revision, not production acceptance; runtime identity remains disabled and staging compute remains stopped.
+
 ## ADR 001 · Preserve the working core
 
 Accepted locally, 9 October 2026. Keep repositories separate. Retain the existing React/Vite/Express stack and styles. Cretans uses TypeScript in the client and ES modules in the server, matching the core backend. Add a separate `/sso` preview and `/api/identity/*` namespace on the core; preserve legacy account routes, schema, cookie and functionality. No email-based automatic migration or linkage.
 
 Central account management is provisionally `https://liiightwave.com/sso`. The existing plural `accounts.liiightwave.com` alias remains the legacy service. Do not introduce `account.liiightwave.com` or repoint the alias. `auth.liiightwave.com` is a proposal only, to be confirmed with the chosen provider before any passkey is registered.
 
-## ADR 002 · Provider selection remains pending
+## ADR 002 · Original provider selection (superseded by ADR 008)
 
 Initially no provider tenant, plan, credentials or issuer was found in the project configurations. The owner subsequently supplied Auth0 access; see ADR 006 and `AUTH0-SETUP.md`. A checkbox and documentation alone do not satisfy the working proof. Neither Auth0 nor Cognito is selected for production. Keep the standards-based OIDC boundary with `openid-client` and JOSE disabled until a reviewed policy exists. Do not implement competing credential authority, token minting or local recovery.
 
@@ -47,7 +49,7 @@ Public learning remains useful without an account. One short sourced chapter and
 
 No existing mentor art was found, so the UI uses mentor names and editorial prompts rather than inventing replacement mascots. No stock art licensing claims are made. The chapter links to its credited museum source without copying their imagery.
 
-## ADR 006 · Auth0 development spike and assurance boundary
+## ADR 006 · Original Auth0 development spike (assurance policy superseded by ADR 008)
 
 Accepted for development only, 9 October 2026. Reuse the owner's empty Auth0 Development tenant, two separate confidential web clients and an Auth0-managed custom domain `auth-staging.liiightwave.com`. The name deliberately separates development credentials from the proposed production RP ID. Hosted login uses the core navy/pale palette; credential UI and authority remain with Auth0.
 
@@ -60,3 +62,13 @@ Required-UV enforcement/evidence and central revocation remain unresolved provid
 Accepted for development, 9 October 2026. Extract the existing OIDC signature/transaction transport into a shared module and exercise it with the real Auth0 clients through an isolated local diagnostic. The actual application provider wrapper still requires its strict assurance policy. The diagnostic never mints an application session, maps an application account, or serves private data; it can therefore collect real supported evidence without inventing UV/assurance values to satisfy the application gate.
 
 Distinct diagnostic cookies and durable local PGlite transactions allow browser binding, callback replay rejection and same-account comparison. Only allowlisted evidence is shown or recorded. Development secrets remain in an owner-only directory and are loaded by the owner-run server. No credential enrollment authority or competing identity token is introduced. See `AUTH0-LIVE-TEST.md` for executed versus pending checks.
+
+## ADR 008 · Retain Auth0 with revised member assurance
+
+Recorded 10 October 2026 following the owner's instruction to revise the security plan without changing authentication service. Retain Auth0 as sole credential authority. Implement the versioned member policy in [AUTH0-SECURITY-PLAN.md](AUTH0-SECURITY-PLAN.md): passkeys preferred, database passwords allowed, provider email recovery accepted, verified mailbox required for private access, and separate privileged-access policy. Do not claim enforced passkey UV, independent two-proof recovery or universally protected provider enrollment.
+
+The original strict-provider assessment remains valid for its original requirements, but those three member guarantees are deliberately superseded. The replacement-provider investigation is closed for this scope. Keep protocol/ownership/CSRF isolation, explicit evidence mapping and failure on missing required member claims. Do not bypass the old gate with invented claims; implement an explicit new policy version and meaningful tests first.
+
+New targets are 30-minute inactivity, a 60-minute deadline anchored to original authentication, five-minute sensitive-action freshness, both-app security-version revocation, and authenticated password-change notifications with an expiry fallback. These targets replace the previous session defaults and provider-wide immediate-revocation expectations only after implementation and measurement. Member recovery-mailbox compromise remains an accepted design limitation, not a risk eliminated by alerts or short sessions.
+
+No runtime configuration, provider Action, credentials, DNS or paid service changed with this ADR. Application identity stays disabled until the revised release gates pass. Production cutover still requires the original explicit approval; no further provider selection or demonstration of required UV is a member-release prerequisite.

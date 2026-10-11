@@ -1,13 +1,22 @@
 import {readFileSync} from 'node:fs';
 import {z} from 'zod';
 
-const policySchema=z.object({
+const strictPolicy=z.object({
+ kind:z.literal('strict-passkey-v1').optional(),
  issuer:z.url(), clientId:z.string().min(1), signingAlgorithm:z.enum(['RS256','ES256']),
  acr:z.string().min(1), amr:z.array(z.string().min(1)).min(1),
  userVerificationClaim:z.string().min(1), userVerificationValue:z.literal(true),
  reviewReference:z.string().min(1), backchannelVerified:z.literal(true),
  subjectMode:z.literal('public'),
 }).strict();
+const memberPolicy=z.object({
+ kind:z.literal('auth0-member-v1'),issuer:z.url(),clientId:z.string().min(1),
+ signingAlgorithm:z.literal('RS256'),subjectMode:z.literal('public'),
+ connectionId:z.string().min(1),connectionName:z.string().min(1),
+ actionRevision:z.literal('2026-10-11.1'),reviewReference:z.string().min(1),
+ revocation:z.literal('password-event-and-authentication-deadline'),
+}).strict();
+export const policySchema=z.union([memberPolicy,strictPolicy]);
 export function loadConfig(env=process.env){
  const production=env.NODE_ENV==='production';
  if(env.MOCK_AUTH || env.TEST_AUTH) throw new Error('Runtime authentication fixtures are forbidden.');
@@ -21,11 +30,14 @@ export function loadConfig(env=process.env){
  if(production && !env.DATABASE_URL) throw new Error('DATABASE_URL required in production');
  let policy;
  if(enabled){
-   if(!env.OIDC_POLICY_FILE || !env.OIDC_CLIENT_SECRET || !env.IDENTITY_DATA_KEY) throw new Error('Identity needs a reviewed policy, client secret, and data key.');
-   policy=policySchema.parse(JSON.parse(readFileSync(env.OIDC_POLICY_FILE,'utf8')));
+   if(!(env.OIDC_POLICY_FILE || env.OIDC_POLICY_JSON) || !env.OIDC_CLIENT_SECRET || !env.IDENTITY_DATA_KEY) throw new Error('Identity needs a reviewed policy, client secret, and data key.');
+   if(env.OIDC_POLICY_FILE && env.OIDC_POLICY_JSON)throw new Error('Choose one policy configuration source.');
+   policy=policySchema.parse(JSON.parse(env.OIDC_POLICY_JSON || readFileSync(env.OIDC_POLICY_FILE,'utf8')));
    if(new URL(policy.issuer).protocol!=='https:') throw new Error('OIDC issuer must use HTTPS');
    if(Buffer.from(env.IDENTITY_DATA_KEY,'base64').length!==32) throw new Error('IDENTITY_DATA_KEY must encode 32 random bytes');
+   if(policy.kind==='auth0-member-v1' && Buffer.from(env.AUTH0_PASSWORD_EVENT_SECRET||'','base64').length!==32)throw new Error('Password events require a dedicated 32-byte shared secret.');
  }
  return {appId,origin,production,enabled,policy,secret:env.OIDC_CLIENT_SECRET,dataKey:env.IDENTITY_DATA_KEY,
-  cookie:production?`__Host-lw-${appId}`:`lw-${appId}`,idleMs:3600000,absoluteMs:43200000,freshMs:300000};
+  eventSecret:env.AUTH0_PASSWORD_EVENT_SECRET,
+  cookie:production?`__Host-lw-${appId}`:`lw-${appId}`,idleMs:policy?.kind==='auth0-member-v1'?1800000:3600000,absoluteMs:policy?.kind==='auth0-member-v1'?3600000:43200000,freshMs:300000};
 }

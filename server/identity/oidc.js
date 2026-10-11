@@ -13,7 +13,9 @@ export async function createOidcTransport(config,fetchImpl=globalThis.fetch){
  return {
   async authorize(tx){
    const params={redirect_uri:config.origin+'/api/identity/callback',scope:'openid',response_mode:'query',code_challenge:await oidc.calculatePKCECodeChallenge(tx.verifier),code_challenge_method:'S256',state:tx.state,nonce:tx.nonce,max_age:String(tx.max_age??3600)};
+   if(p.kind==='auth0-member-v1'){params.scope='openid email';params.connection=p.connectionName;}
    if(p.acr)params.acr_values=p.acr;
+   if(tx.max_age===0)params.prompt='login';
    if(tx.prompt!==undefined){if(!['login','none'].includes(tx.prompt))throw new Error('Invalid prompt');params.prompt=tx.prompt;}
    if(tx.signup===true)params.screen_hint='signup';
    return oidc.buildAuthorizationUrl(client,params).href;

@@ -1,5 +1,9 @@
 # Auth0 acceptance decision · 10 October 2026
 
+**Current plan · 10 October revision:** The owner chose to retain Auth0 and revise member assurance. [AUTH0-SECURITY-PLAN.md](AUTH0-SECURITY-PLAN.md) now defines passkey-preferred sign-in, password fallback, provider email recovery and bounded session exposure. Earlier required-UV/two-proof gates are historical for ordinary members. This is a plan revision, not production acceptance; runtime identity remains disabled and staging compute remains stopped.
+
+**Historical evidence:** Results and configuration below describe the earlier strict-policy diagnostic. They are preserved without converting vendor statements or old tests into acceptance of the revised plan.
+
 **Decision: Auth0 hosted Universal Login is not approved for the required LiiiGHTWAVE/Cretans assurance policy.** Support describes behavior incompatible with required user verification and protected recovery/enrollment. Reconsider only after a supported enforcement path and independent negative-path tests demonstrate the requirements. A paid plan, a successful ordinary passkey login, or a method-only Action is not a substitute for that proof.
 
 ## Evidence classification
