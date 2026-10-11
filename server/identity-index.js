@@ -1,6 +1,5 @@
 import express from 'express';
 import helmet from 'helmet';
-import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {loadConfig} from './identity/config.js';
 import {createProvider} from './identity/provider.js';
@@ -13,7 +12,9 @@ import {startSecurityEmailWorker} from './identity/email-outbox.js';
 if(!process.env.IDENTITY_DATABASE_URL)throw Error('Dedicated identity database required.');
 const config=loadConfig({...process.env,IDENTITY_APP_ID:'liiightwave'});
 const db=connectDatabase(process.env.IDENTITY_DATABASE_URL);
-await db.query(await readFile(new URL('./identity/schema.sql',import.meta.url),'utf8'));
+// Migrations run separately with operator credentials. The web process only
+// verifies the schema and can run with a role that cannot create or alter it.
+await db.query('SELECT id,suspended_at FROM lw_accounts LIMIT 0; SELECT id,sealed_recipient,accepted_at FROM lw_email_outbox LIMIT 0;');
 const provider=config.enabled?await createProvider(config):null;
 const app=express();app.disable('x-powered-by');app.set('trust proxy',false);app.use(helmet());
 app.get('/api/health',async(_req,res)=>{try{await db.query('SELECT 1');res.set('Cache-Control','no-store').json({status:'ok',identity:config.enabled});}catch{res.status(503).json({status:'unavailable'});}});
