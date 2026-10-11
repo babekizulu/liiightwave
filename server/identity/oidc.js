@@ -5,6 +5,7 @@ import {createRemoteJWKSet,jwtVerify,customFetch} from 'jose';
 // This module never creates an application account or session.
 export async function createOidcTransport(config,fetchImpl=globalThis.fetch){
  const p=config.policy;
+ const cognito=p.kind==='cognito-member-staging-v1';
  const client=await oidc.discovery(new URL(p.issuer),p.clientId,{id_token_signed_response_alg:p.signingAlgorithm},oidc.ClientSecretPost(config.secret),{timeout:10,[oidc.customFetch]:fetchImpl});
  oidc.enableNonRepudiationChecks(client);
  const metadata=client.serverMetadata();
@@ -13,17 +14,21 @@ export async function createOidcTransport(config,fetchImpl=globalThis.fetch){
  const jwks=createRemoteJWKSet(new URL(metadata.jwks_uri),{[customFetch]:fetchImpl});
  return {
   async authorize(tx){
-   const params={redirect_uri:config.origin+'/api/identity/callback',scope:'openid',response_mode:'query',code_challenge:await oidc.calculatePKCECodeChallenge(tx.verifier),code_challenge_method:'S256',state:tx.state,nonce:tx.nonce,max_age:String(tx.max_age??3600)};
+   // Real Cognito managed-login SSO minted a new auth_time without credentials.
+   // Require an interactive provider proof for each new app session; its SSO
+   // timestamp cannot establish an original authentication deadline or recovery.
+   const maxAge=cognito?0:tx.max_age??3600;
+   const params={redirect_uri:config.origin+'/api/identity/callback',scope:'openid',response_mode:'query',code_challenge:await oidc.calculatePKCECodeChallenge(tx.verifier),code_challenge_method:'S256',state:tx.state,nonce:tx.nonce,max_age:String(maxAge)};
    if(p.kind==='auth0-member-v1'){params.scope='openid email';params.connection=p.connectionName;}
    if(p.kind==='cognito-member-staging-v1')params.scope='openid email';
    if(p.acr)params.acr_values=p.acr;
-   if(tx.max_age===0)params.prompt='login';
-   if(tx.prompt!==undefined){if(!['login','none'].includes(tx.prompt))throw new Error('Invalid prompt');params.prompt=tx.prompt;}
+   if(maxAge===0)params.prompt='login';
+   if(tx.prompt!==undefined){if(!['login','none'].includes(tx.prompt)||(cognito&&tx.prompt!=='login'))throw new Error('Invalid prompt');params.prompt=tx.prompt;}
    if(tx.signup===true && p.kind!=='cognito-member-staging-v1')params.screen_hint='signup';
    return oidc.buildAuthorizationUrl(client,params).href;
   },
   async exchangeClaims(url,tx){
-   const tokens=await oidc.authorizationCodeGrant(client,url,{pkceCodeVerifier:tx.verifier,expectedState:tx.state,expectedNonce:tx.nonce,maxAge:tx.max_age??3600,idTokenExpected:true});
+   const tokens=await oidc.authorizationCodeGrant(client,url,{pkceCodeVerifier:tx.verifier,expectedState:tx.state,expectedNonce:tx.nonce,maxAge:cognito?0:tx.max_age??3600,idTokenExpected:true});
    // Only validated claims leave this function. No access/refresh/ID token is retained.
    return tokens.claims();
   },

@@ -99,7 +99,7 @@ export function createIdentityRouter(db,c,provider){
  r.post('/login',ready,limit,async(req,res)=>{
   const input=z.object({talisman:z.string().max(512).optional(),fresh:z.boolean().optional(),signup:z.boolean().optional()}).strict().parse(req.body);
   const talisman=input.talisman?parseTalisman(input.talisman):null;
-  const tx={state:random(),verifier:random(),nonce:random(),max_age:input.fresh?0:3600},browser=random();
+  const tx={state:random(),verifier:random(),nonce:random(),max_age:input.fresh||c.policy.kind==='cognito-member-staging-v1'?0:3600},browser=random();
   await db.transaction(async q=>{
    if(req.cookies[txCookie])await q.query('DELETE FROM lw_transactions WHERE browser_hash=$1 AND client=$2',[digest(req.cookies[txCookie]),c.appId]);
    await q.query('INSERT INTO lw_transactions(state_hash,browser_hash,client,verifier,nonce,expires_at,talisman_hash,onboarding_hash,max_age) VALUES($1,$2,$3,$4,$5,now()+interval \'5 minutes\',$6,$7,$8)',[digest(tx.state),digest(browser),c.appId,tx.verifier,tx.nonce,talisman?digest(talisman.ref):null,req.cookies[onCookie]?digest(req.cookies[onCookie]):null,tx.max_age]);
