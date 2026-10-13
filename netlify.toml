@@ -4,6 +4,11 @@
 [build.environment]
   NODE_VERSION = "22"
 [[redirects]]
+  from = "/api/identity/*"
+  to = "https://liiightwave-identity-production.up.railway.app/api/identity/:splat"
+  status = 200
+  force = true
+[[redirects]]
   from = "/api/*"
   to = "https://liiightwave-production.up.railway.app/api/:splat"
   status = 200

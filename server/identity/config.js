@@ -23,8 +23,16 @@ const cognitoStagingPolicy=z.object({
  loginOrigin:z.literal('https://lw-staging-130165494614.auth.af-south-1.amazoncognito.com'),
  reviewReference:z.string().min(1),revocation:z.enum(['authentication-deadline-only','password-event-and-authentication-deadline']),
 }).strict().refine(p=>p.issuer===`https://cognito-idp.af-south-1.amazonaws.com/${p.userPoolId}`,'Issuer must identify the reviewed Cape Town pool.');
-export const policySchema=z.union([memberPolicy,cognitoStagingPolicy,strictPolicy]);
-export const isMemberPolicy=policy=>['auth0-member-v1','cognito-member-staging-v1'].includes(policy?.kind);
+const cognitoProductionPolicy=z.object({
+ kind:z.literal('cognito-member-production-v1'),issuer:z.url(),clientId:z.string().min(1),
+ signingAlgorithm:z.literal('RS256'),subjectMode:z.literal('public'),
+ userPoolId:z.string().regex(/^af-south-1_[A-Za-z0-9]+$/),
+ loginOrigin:z.literal('https://auth.liiightwave.com'),
+ reviewReference:z.string().min(1),revocation:z.literal('password-event-and-authentication-deadline'),
+}).strict().refine(p=>p.issuer===`https://cognito-idp.af-south-1.amazonaws.com/${p.userPoolId}`&&p.userPoolId!=='af-south-1_o339nGcD1','Production requires its own reviewed Cape Town pool.');
+export const policySchema=z.union([memberPolicy,cognitoStagingPolicy,cognitoProductionPolicy,strictPolicy]);
+export const isCognitoPolicy=policy=>['cognito-member-staging-v1','cognito-member-production-v1'].includes(policy?.kind);
+export const isMemberPolicy=policy=>policy?.kind==='auth0-member-v1'||isCognitoPolicy(policy);
 export function loadConfig(env=process.env){
  const production=env.NODE_ENV==='production';
  if(env.MOCK_AUTH || env.TEST_AUTH) throw new Error('Runtime authentication fixtures are forbidden.');
@@ -45,7 +53,8 @@ export function loadConfig(env=process.env){
    if(Buffer.from(env.IDENTITY_DATA_KEY,'base64').length!==32) throw new Error('IDENTITY_DATA_KEY must encode 32 random bytes');
    if(policy.kind==='auth0-member-v1' && Buffer.from(env.AUTH0_PASSWORD_EVENT_SECRET||'','base64').length!==32)throw new Error('Password events require a dedicated 32-byte shared secret.');
    if(policy.kind==='cognito-member-staging-v1' && origin!==`https://${appId==='liiightwave'?'liiightwave':'cretans'}-probe-staging.up.railway.app`)throw new Error('Cognito migration policy is restricted to the dedicated staging origins.');
-   if(policy.kind==='cognito-member-staging-v1' && policy.revocation==='password-event-and-authentication-deadline' && Buffer.from(env.COGNITO_PASSWORD_EVENT_SECRET||'','base64').length!==32)throw new Error('Cognito password events require a dedicated 32-byte shared secret.');
+   if(policy.kind==='cognito-member-production-v1' && origin!==`https://${appId==='liiightwave'?'liiightwave.com':'cretans.liiightwave.com'}`)throw new Error('Production Cognito requires the exact public application origin.');
+   if(isCognitoPolicy(policy) && policy.revocation==='password-event-and-authentication-deadline' && Buffer.from(env.COGNITO_PASSWORD_EVENT_SECRET||'','base64').length!==32)throw new Error('Cognito password events require a dedicated 32-byte shared secret.');
    if(env.IDENTITY_MIGRATION_ENABLED==='true'){
     if(appId!=='liiightwave'||policy.kind!=='cognito-member-staging-v1'||!env.MIGRATION_SOURCE_CLIENT_SECRET)throw new Error('Identity transfer is limited to the central Cognito staging app.');
     migrationSourcePolicy=memberPolicy.parse(JSON.parse(env.MIGRATION_SOURCE_POLICY_JSON||'null'));
@@ -54,7 +63,7 @@ export function loadConfig(env=process.env){
    }
  }
  return {appId,origin,production,enabled,policy,secret:env.OIDC_CLIENT_SECRET,dataKey:env.IDENTITY_DATA_KEY,
-  eventSecret:policy?.kind==='cognito-member-staging-v1'?env.COGNITO_PASSWORD_EVENT_SECRET:env.AUTH0_PASSWORD_EVENT_SECRET,
+  eventSecret:isCognitoPolicy(policy)?env.COGNITO_PASSWORD_EVENT_SECRET:env.AUTH0_PASSWORD_EVENT_SECRET,
   migrationSourcePolicy,migrationSourceSecret:migrationSourcePolicy?env.MIGRATION_SOURCE_CLIENT_SECRET:undefined,
   migrationSourceEventSecret:migrationSourcePolicy?env.AUTH0_PASSWORD_EVENT_SECRET:undefined,
   cookie:production?`__Host-lw-${appId}`:`lw-${appId}`,idleMs:isMemberPolicy(policy)?1800000:3600000,absoluteMs:isMemberPolicy(policy)?3600000:43200000,freshMs:300000};

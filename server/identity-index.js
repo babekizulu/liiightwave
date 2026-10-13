@@ -6,6 +6,7 @@ import {createProvider} from './identity/provider.js';
 import {connectDatabase} from './identity/db.js';
 import {createIdentityRouter} from './identity/router.js';
 import {startSecurityEmailWorker} from './identity/email-outbox.js';
+import {identityHealth} from './identity/health.js';
 
 // Separate deployment and database credentials: this service never opens or
 // migrates the existing website's password account database.
@@ -17,7 +18,7 @@ const db=connectDatabase(process.env.IDENTITY_DATABASE_URL);
 await db.query('SELECT id,suspended_at FROM lw_accounts LIMIT 0; SELECT id,sealed_recipient,accepted_at FROM lw_email_outbox LIMIT 0; SELECT migration_purpose,migration_proof FROM lw_transactions LIMIT 0; SELECT id FROM lw_identity_transfers LIMIT 0; SELECT issuer FROM lw_identity_revocations LIMIT 0;');
 const provider=config.enabled?await createProvider(config):null;
 const app=express();app.disable('x-powered-by');app.set('trust proxy',false);app.use(helmet());
-app.get('/api/health',async(_req,res)=>{try{await db.query('SELECT 1');res.set('Cache-Control','no-store').json({status:'ok',identity:config.enabled});}catch{res.status(503).json({status:'unavailable'});}});
+app.get('/api/health',async(_req,res)=>{res.set('Cache-Control','no-store');try{const healthy=await identityHealth(db);res.status(healthy?200:503).json({status:healthy?'ok':'unavailable',identity:config.enabled});}catch{res.status(503).json({status:'unavailable'});}});
 app.use('/api/identity',createIdentityRouter(db,config,provider));
 app.use('/api',(_req,res)=>res.status(404).json({error:'Endpoint unavailable.'}));
 const dist=fileURLToPath(new URL('../dist/',import.meta.url));

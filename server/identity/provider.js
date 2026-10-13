@@ -1,4 +1,5 @@
 import {createOidcTransport} from './oidc.js';
+import {isCognitoPolicy} from './config.js';
 
 // No provider is selected by this library. The deployment must supply a reviewed,
 // issuer-specific evidence mapping. A successful OAuth exchange is insufficient.
@@ -6,7 +7,7 @@ export function assertAssurance(claims,policy,now=Date.now()){
  if(claims.iss!==policy.issuer || typeof claims.sub!=='string' || !claims.sub)throw new Error('Identity rejected');
  if(policy.kind==='auth0-member-v1'){
   if(claims.email_verified!==true || claims['https://liiightwave.com/authentication/policy']!=='auth0-member-v1' || claims['https://liiightwave.com/authentication/connection']!==policy.connectionId || claims['https://liiightwave.com/authentication/revision']!==policy.actionRevision)throw new Error('Member policy rejected');
- }else if(policy.kind==='cognito-member-staging-v1'){
+ }else if(isCognitoPolicy(policy)){
   if(claims.email_verified!==true || claims.token_use!=='id' || claims.identities!==undefined)throw new Error('Cognito member policy rejected');
  }else{
   if(policy.kind && policy.kind!=='strict-passkey-v1')throw new Error('Unknown policy');
